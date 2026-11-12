@@ -1,8 +1,8 @@
 module Main (main) where
 
-import Command (Command (..))
-import CommandParser (commandParserInfo)
-import Credentials (credentialErrorMessage, loadCredentials)
+import Alpaca.Command (Command (..))
+import Alpaca.Command.Parser (commandParserInfo)
+import Alpaca.Credentials (credentialErrorMessage, loadCredentials)
 import Options.Applicative (execParser)
 import System.Exit (exitFailure)
 import System.IO (hPutStrLn, stderr)

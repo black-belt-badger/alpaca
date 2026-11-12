@@ -1,4 +1,4 @@
-module AccountCommand (AccountCommand (..)) where
+module Alpaca.Command.Account (AccountCommand (..)) where
 
 -- | Options for the @alpaca account@ subcommand.
 data AccountCommand = AccountCommand

@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module CredentialsSpec (spec) where
+module Alpaca.CredentialsSpec (spec) where
 
-import Credentials
+import Alpaca.Credentials
   ( CredentialError (..)
   , Credentials (..)
   , credentialErrorMessage

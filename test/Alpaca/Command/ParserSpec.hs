@@ -1,8 +1,8 @@
-module CommandParserSpec (spec) where
+module Alpaca.Command.ParserSpec (spec) where
 
-import AccountCommand (AccountCommand (..))
-import Command (Command (..))
-import CommandParser (commandParserInfo)
+import Alpaca.Command.Account (AccountCommand (..))
+import Alpaca.Command (Command (..))
+import Alpaca.Command.Parser (commandParserInfo)
 import Options.Applicative (defaultPrefs, execParserPure, getParseResult)
 import Test.Hspec (Spec, it, shouldBe)
 

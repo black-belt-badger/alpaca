@@ -1,6 +1,6 @@
-module Command (Command (..)) where
+module Alpaca.Command (Command (..)) where
 
-import AccountCommand (AccountCommand)
+import Alpaca.Command.Account (AccountCommand)
 
 -- | Supported subcommands of the @alpaca@ CLI.
 data Command

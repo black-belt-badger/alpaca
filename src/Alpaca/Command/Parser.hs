@@ -1,7 +1,7 @@
-module CommandParser (commandParserInfo) where
+module Alpaca.Command.Parser (commandParserInfo) where
 
-import AccountCommand (AccountCommand (..))
-import Command (Command (..))
+import Alpaca.Command.Account (AccountCommand (..))
+import Alpaca.Command (Command (..))
 import Options.Applicative
   ( Parser
   , ParserInfo

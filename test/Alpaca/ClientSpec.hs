@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module AlpacaClientSpec (spec) where
+module Alpaca.ClientSpec (spec) where
 
-import AlpacaClient
+import Alpaca.Client
   ( AlpacaError (..)
   , accountRequest
   , alpacaErrorMessage
   , interpretAccountResponse
   )
-import Credentials (Credentials (..))
+import Alpaca.Credentials (Credentials (..))
 import Network.HTTP.Client (Request (..))
 import Test.Hspec (Spec, it, shouldBe)
 

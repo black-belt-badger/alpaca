@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module AlpacaClient
+module Alpaca.Client
   ( AlpacaError (..)
   , fetchAccount
   , accountRequest
@@ -12,7 +12,7 @@ import Control.Exception (try)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as Lazy
 import Data.Text.Encoding (encodeUtf8)
-import Credentials (Credentials (..))
+import Alpaca.Credentials (Credentials (..))
 import Network.HTTP.Client
   ( HttpException
   , Request (..)

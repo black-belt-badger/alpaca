@@ -1,4 +1,4 @@
-module Credentials
+module Alpaca.Credentials
   ( Credentials (..)
   , CredentialError (..)
   , loadCredentials

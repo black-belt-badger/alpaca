@@ -1,7 +1,7 @@
-module CommandSpec (spec) where
+module Alpaca.CommandSpec (spec) where
 
-import AccountCommand (AccountCommand (..))
-import Command (Command (..))
+import Alpaca.Command.Account (AccountCommand (..))
+import Alpaca.Command (Command (..))
 import Test.Hspec (Spec, it, shouldBe)
 
 spec :: Spec
