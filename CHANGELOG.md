@@ -8,6 +8,8 @@ Release headings are dated only when a release is published.
 ## Unreleased
 
 ### Added
+- `kirke orders` lists paper orders with typed status, limit, symbols and direction filters, maintaining exact decimal-string financial values.
+- `kirke orders --out PATH` saves full provider JSON privately; offline and paper integration checks cover queries, null/empty results, and secure output.
 - `kirke assets` lists crypto assets by default; `--asset-class` and `--status` control server-side filters.
 - `kirke assets --out PATH` saves complete assets JSON privately, with tests for query construction, decoding, optional fields, and empty results.
 - `kirke positions` lists all open crypto and equity positions from the Alpaca paper Trading API, preserving decimal strings.

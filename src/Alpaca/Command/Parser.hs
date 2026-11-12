@@ -8,6 +8,7 @@ import Alpaca.Command.Assets
   , parseAssetStatus
   )
 import Alpaca.Command (Command (..))
+import Alpaca.Command.Orders (OrderDirection (Desc), OrderStatus (OrdersOpen), OrdersCommand (..), parseOrderStatus, parseOrderDirection, parseOrderLimit, parseOrderSymbols)
 import Alpaca.Command.Positions (PositionsCommand (..))
 import Options.Applicative
   ( Parser
@@ -47,6 +48,9 @@ commandParser =
         <> command "assets"
           (info (Assets <$> assetsParser)
             (progDesc "List Alpaca paper assets (crypto by default)"))
+        <> command "orders"
+          (info (Orders <$> ordersParser)
+            (progDesc "List and filter Alpaca paper orders (read-only)"))
     )
 
 accountParser :: Parser AccountCommand
@@ -71,6 +75,19 @@ assetsParser =
               <> help "Filter by active, inactive, or all (default: no filter)"
           )
       )
+    <*> outputParser
+
+ordersParser :: Parser OrdersCommand
+ordersParser =
+  OrdersCommand
+    <$> option (eitherReader parseOrderStatus)
+      (long "status" <> metavar "STATUS" <> value OrdersOpen <> help "open (default), closed, or all")
+    <*> optional (option (eitherReader parseOrderLimit)
+      (long "limit" <> metavar "N" <> help "Maximum orders, between 1 and 500 (default: 50)"))
+    <*> optional (option (eitherReader parseOrderSymbols)
+      (long "symbols" <> metavar "SYMBOLS" <> help "Comma-separated symbols, e.g. BTCUSD,ETHUSD,AAPL"))
+    <*> option (eitherReader parseOrderDirection)
+      (long "direction" <> metavar "DIRECTION" <> value Desc <> help "asc or desc (default)")
     <*> outputParser
 
 outputParser :: Parser (Maybe FilePath)

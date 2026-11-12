@@ -7,7 +7,7 @@
 [![Haskell CI](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
-**Kirke** is an open-source, unofficial Haskell command-line application for accessing [Alpaca's Trading API](https://docs.alpaca.markets/). It offers **read-only account information, open positions, and asset discovery** from Alpaca paper trading. It is not affiliated with, sponsored by, or endorsed by Alpaca Markets.
+**Kirke** is an open-source, unofficial Haskell command-line application for accessing [Alpaca's Trading API](https://docs.alpaca.markets/). It offers **read-only account information, open positions, asset discovery, and order history** from Alpaca paper trading. It is not affiliated with, sponsored by, or endorsed by Alpaca Markets.
 
 The GitHub repository, Haskell package, and command-line executable are named **Kirke** (`kirke`). Its provider-specific Haskell modules intentionally remain under `Alpaca.*`.
 
@@ -27,10 +27,14 @@ The project is early in development. Its first goal is a small, useful, testable
 | `kirke assets` | List available crypto assets (explicit default) |
 | `kirke assets --asset-class us_equity` | List available US equities |
 | `kirke assets --status active --out PATH` | Filter assets and save original JSON privately |
+| `kirke orders` | List open paper orders, most recent first |
+| `kirke orders --status all --limit 10` | Inspect up to 10 recent orders |
+| `kirke orders --symbols BTCUSD,ETHUSD --direction asc` | Filter orders by symbol and submission order |
+| `kirke orders --out PATH` | Save complete, unmodified order JSON privately |
 
 The summary includes account number, status, currency, cash, equity, buying power, trading-blocked flag, and crypto status (when available).
 
-**Not implemented:** live-account access, trade submission, order management, market data, streaming, and shell completion. Listing positions does **not** close them or place orders. No trading decisions are made or orders placed.
+**Not implemented:** live-account access, order submission/cancellation, market data, streaming, and shell completion. Listing positions does **not** close them or place orders. No trading decisions are made or orders placed.
 
 ## Requirements
 
@@ -179,9 +183,30 @@ Like the other `--out` commands, output uses an atomic write with owner-only fil
 
 Official API documentation: [GET /v2/assets](https://docs.alpaca.markets/us/reference/get-v2-assets-1).
 
+## Orders: read-only history and filters
+
+List open orders (Alpaca defaults to open, 50 orders, newest first; Kirke sends the status and direction explicitly):
+
+```sh
+stack exec -- kirke orders
+stack exec -- kirke orders --status all --limit 10
+stack exec -- kirke orders --status closed --direction asc
+stack exec -- kirke orders --symbols BTCUSD,ETHUSD,AAPL --limit 50
+```
+
+Options: `--status open|closed|all`, `--limit 1..500`, `--direction asc|desc`, and `--symbols` with comma-separated API symbols such as `BTCUSD` (not `BTC/USD`). The filters are sent to Alpaca; Kirke does not paginate automatically. It prints `No matching orders.` for an empty result. Prices and quantities remain exact decimal **strings**, including optional/notional orders; null fields appear as `not provided`.
+
+Save the complete original provider response instead of displaying a summary:
+
+```sh
+stack exec -- kirke orders --status all --limit 10 --out output/orders.json
+```
+
+JSON files are private and atomically replaced (typically mode `0600`). Both summaries and order JSON can reveal personal portfolio activity. **No order is placed, modified or canceled.** For historical queries beyond the latest 500, a future ticket will provide explicit pagination. Reference: [Alpaca GET /v2/orders](https://docs.alpaca.markets/us/reference/getallorders-1).
+
 ## Integration test (maintainers)
 
-`scripts/it.sh` performs live requests against the **paper** API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials`, installs the local CLI using Stack, writes account, positions, and assets files under the ignored `output/` directory, checks JSON structures using `jq`, and verifies private file permissions using GNU `stat`.
+`scripts/it.sh` performs live requests against the **paper** API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials`, installs the local CLI using Stack, writes account, positions, assets, and orders files under the ignored `output/` directory, checks JSON structures using `jq`, and verifies private file permissions using GNU `stat`.
 
 On a trusted Linux machine with paper credentials, `jq`, and Stack's executable directory on `PATH`:
 
