@@ -1,11 +1,16 @@
 # Changelog for `alpaca`
 
-All notable changes to this project will be documented in this file.
+All notable changes to this project will be documented here.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to the
-[Haskell Package Versioning Policy](https://pvp.haskell.org/).
+This project follows the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
+Release headings are dated only when a release is published.
 
 ## Unreleased
 
-## 0.1.0.0 - YYYY-MM-DD
+### Added
+- `alpaca account` retrieves a paper trading account and prints a readable summary.
+- `alpaca account --out PATH` preserves the full JSON response in an owner-only file.
+- Offline Hspec tests and a GitHub Actions build-and-test workflow.
+- Contributor issue forms, pull request template, and contributing guide.
+
+Before the first release, move the relevant entries to the `0.1.0.0` heading with the actual release date.
