@@ -2,6 +2,7 @@ module Alpaca.Command.Parser (commandParserInfo) where
 
 import Alpaca.Command.Account (AccountCommand (..))
 import Alpaca.Command (Command (..))
+import Alpaca.Command.Positions (PositionsCommand (..))
 import Options.Applicative
   ( Parser
   , ParserInfo
@@ -31,15 +32,23 @@ commandParser =
         ( info (Account <$> accountParser)
             (progDesc "Fetch Alpaca account information")
         )
+        <> command "positions"
+          (info (Positions <$> positionsParser)
+            (progDesc "List Alpaca paper account open positions"))
     )
 
 accountParser :: Parser AccountCommand
-accountParser =
-  AccountCommand
-    <$> optional
-      ( strOption
-          ( long "out"
-              <> metavar "PATH"
-              <> help "Write the complete JSON response to PATH"
-          )
-      )
+accountParser = AccountCommand <$> outputParser
+
+positionsParser :: Parser PositionsCommand
+positionsParser = PositionsCommand <$> outputParser
+
+outputParser :: Parser (Maybe FilePath)
+outputParser =
+  optional
+    ( strOption
+        ( long "out"
+            <> metavar "PATH"
+            <> help "Write the complete JSON response to PATH"
+        )
+    )

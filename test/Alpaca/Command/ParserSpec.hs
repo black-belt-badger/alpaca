@@ -1,6 +1,7 @@
 module Alpaca.Command.ParserSpec (spec) where
 
 import Alpaca.Command.Account (AccountCommand (..))
+import Alpaca.Command.Positions (PositionsCommand (..))
 import Alpaca.Command (Command (..))
 import Alpaca.Command.Parser (commandParserInfo)
 import Options.Applicative (defaultPrefs, execParserPure, getParseResult)
@@ -17,6 +18,19 @@ spec = do
 
   it "rejects --out without a path" $
     parse ["account", "--out"] `shouldBe` Nothing
+
+  it "parses positions without output" $
+    parse ["positions"] `shouldBe` Just (Positions (PositionsCommand Nothing))
+
+  it "parses positions with --out" $
+    parse ["positions", "--out", "positions.json"]
+      `shouldBe` Just (Positions (PositionsCommand (Just "positions.json")))
+
+  it "rejects positions --out without a path" $
+    parse ["positions", "--out"] `shouldBe` Nothing
+
+  it "rejects an unknown positions option" $
+    parse ["positions", "--unexpected"] `shouldBe` Nothing
 
   it "rejects an unknown option" $
     parse ["account", "--unexpected"] `shouldBe` Nothing

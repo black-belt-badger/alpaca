@@ -3,6 +3,9 @@
 module Alpaca.Client
   ( AlpacaError (..)
   , fetchAccount
+  , fetchPositions
+  , positionsRequest
+  , interpretPaperResponse
   , accountRequest
   , interpretAccountResponse
   , alpacaErrorMessage
@@ -35,21 +38,34 @@ data AlpacaError
 
 -- | Retrieve the complete, unmodified JSON response from the paper trading API.
 fetchAccount :: Credentials -> IO (Either AlpacaError ByteString)
-fetchAccount credentials = do
+fetchAccount = fetchPaper . accountRequest
+
+-- | Retrieve open positions from the same authenticated paper Trading API.
+fetchPositions :: Credentials -> IO (Either AlpacaError ByteString)
+fetchPositions = fetchPaper . positionsRequest
+
+fetchPaper :: Request -> IO (Either AlpacaError ByteString)
+fetchPaper request = do
   result <-
-    try (newManager tlsManagerSettings >>= httpLbs (accountRequest credentials))
+    try (newManager tlsManagerSettings >>= httpLbs request)
       :: IO (Either HttpException (Response Lazy.ByteString))
   pure $ case result of
     Left _ -> Left ConnectionFailed
     Right response ->
-      interpretAccountResponse
+      interpretPaperResponse
         (statusCode (responseStatus response))
         (Lazy.toStrict (responseBody response))
 
--- | Construct the request without performing IO. Kept public for offline tests.
+-- | Construct requests without IO, exposing no credentials in diagnostics.
 accountRequest :: Credentials -> Request
-accountRequest credentials =
-  (parseRequest_ "https://paper-api.alpaca.markets/v2/account")
+accountRequest credentials = paperRequest credentials "/v2/account"
+
+positionsRequest :: Credentials -> Request
+positionsRequest credentials = paperRequest credentials "/v2/positions"
+
+paperRequest :: Credentials -> String -> Request
+paperRequest credentials endpoint =
+  (parseRequest_ ("https://paper-api.alpaca.markets" <> endpoint))
     { method = "GET"
     , requestHeaders =
         [ ("APCA-API-KEY-ID", encodeUtf8 (apiKeyId credentials))
@@ -64,7 +80,10 @@ accountRequest credentials =
 
 -- | Only successful HTTP responses are accepted.
 interpretAccountResponse :: Int -> ByteString -> Either AlpacaError ByteString
-interpretAccountResponse status body
+interpretAccountResponse = interpretPaperResponse
+
+interpretPaperResponse :: Int -> ByteString -> Either AlpacaError ByteString
+interpretPaperResponse status body
   | status >= 200 && status < 300 = Right body
   | otherwise = Left (UnexpectedStatus status)
 
