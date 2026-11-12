@@ -5,7 +5,9 @@ module Alpaca.Client
   , fetchAccount
   , fetchPositions
   , fetchAssets
+  , fetchOrders
   , assetsRequest
+  , ordersRequest
   , positionsRequest
   , interpretPaperResponse
   , accountRequest
@@ -18,6 +20,9 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as Lazy
 import Data.Text.Encoding (encodeUtf8)
 import Alpaca.Command.Assets (AssetClass, AssetStatus, assetClassParameter, assetStatusParameter)
+import Alpaca.Command.Orders (OrdersCommand (..), orderFilterParameter, orderDirectionParameter)
+import Data.List (intercalate)
+import qualified Data.ByteString.Char8 as ByteString8
 import Alpaca.Credentials (Credentials (..))
 import Network.HTTP.Client
   ( HttpException
@@ -53,6 +58,10 @@ fetchAssets :: Credentials -> AssetClass -> Maybe AssetStatus -> IO (Either Alpa
 fetchAssets credentials assetClass status =
   fetchPaper (assetsRequest credentials assetClass status)
 
+-- | Retrieve order history for the paper account, without submitting orders.
+fetchOrders :: Credentials -> OrdersCommand -> IO (Either AlpacaError ByteString)
+fetchOrders credentials = fetchPaper . ordersRequest credentials
+
 fetchPaper :: Request -> IO (Either AlpacaError ByteString)
 fetchPaper request = do
   result <-
@@ -81,6 +90,20 @@ assetsRequest credentials classFilter statusFilter =
         <> maybe [] (\status -> [("status", Just (assetStatusParameter status))]) statusFilter
     )
     (paperRequest credentials "/v2/assets")
+
+-- | Query values are encoded by http-client and never interpolated into a URL.
+ordersRequest :: Credentials -> OrdersCommand -> Request
+ordersRequest credentials options =
+  setQueryString
+    ( [ ("status", Just (orderFilterParameter (ordersStatus options)))
+      , ("direction", Just (orderDirectionParameter (ordersDirection options)))
+      ]
+      <> maybe [] (\limit -> [("limit", Just (ByteString8.pack (show limit)))]) (ordersLimit options)
+      <> if null (ordersSymbols options)
+          then []
+          else [("symbols", Just (ByteString8.pack (intercalate "," (ordersSymbols options))))]
+    )
+    (paperRequest credentials "/v2/orders")
 
 paperRequest :: Credentials -> String -> Request
 paperRequest credentials endpoint =

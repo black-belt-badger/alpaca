@@ -6,12 +6,14 @@ import Alpaca.Client
   ( AlpacaError (..)
   , accountRequest
   , assetsRequest
+  , ordersRequest
   , positionsRequest
   , interpretPaperResponse
   , alpacaErrorMessage
   , interpretAccountResponse
   )
 import Alpaca.Command.Assets (AssetClass (..), AssetStatus (..))
+import Alpaca.Command.Orders (OrdersCommand (..), OrderFilter (..), OrderDirection (..))
 import Alpaca.Credentials (Credentials (..))
 import Network.HTTP.Client (Request (..))
 import Test.Hspec (Spec, it, shouldBe)
@@ -59,6 +61,31 @@ spec = do
       `shouldBe` "?asset_class=crypto&status=inactive"
     queryString (assetsRequest credentials Crypto (Just All))
       `shouldBe` "?asset_class=crypto&status=all"
+
+  it "constructs paper-only order requests with explicit defaults" $ do
+    let orders = ordersRequest credentials (OrdersCommand OpenOrders Nothing [] Descending Nothing)
+    method orders `shouldBe` "GET"
+    secure orders `shouldBe` True
+    host orders `shouldBe` "paper-api.alpaca.markets"
+    path orders `shouldBe` "/v2/orders"
+    redirectCount orders `shouldBe` 0
+    requestHeaders orders `shouldBe` requestHeaders request
+    queryString orders `shouldBe` "?status=open&direction=desc"
+
+  it "encodes order filters, comma-separated symbols and crypto slashes" $ do
+    let orders = ordersRequest credentials
+          (OrdersCommand AllOrders (Just 500) ["BTC/USD", "AAPL"] Ascending Nothing)
+    queryString orders `shouldBe`
+      "?status=all&direction=asc&limit=500&symbols=BTC%2FUSD%2CAAPL"
+
+  it "supports closed orders and a single symbol" $
+    queryString (ordersRequest credentials
+      (OrdersCommand ClosedOrders (Just 1) ["SOLUSD"] Descending Nothing))
+      `shouldBe` "?status=closed&direction=desc&limit=1&symbols=SOLUSD"
+
+  it "does not return order error response bodies" $ do
+    interpretPaperResponse 403 "private error" `shouldBe` Left (UnexpectedStatus 403)
+    interpretPaperResponse 429 "rate limit details" `shouldBe` Left (UnexpectedStatus 429)
 
   it "returns the complete positions JSON body on HTTP 200" $
     interpretPaperResponse 200 "[]"

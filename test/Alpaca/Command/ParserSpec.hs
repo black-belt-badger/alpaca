@@ -3,6 +3,7 @@ module Alpaca.Command.ParserSpec (spec) where
 import Alpaca.Command.Account (AccountCommand (..))
 import Alpaca.Command.Assets (AssetClass (..), AssetStatus (..), AssetsCommand (..))
 import Alpaca.Command.Positions (PositionsCommand (..))
+import Alpaca.Command.Orders (OrdersCommand (..), OrderFilter (..), OrderDirection (..))
 import Alpaca.Command (Command (..))
 import Alpaca.Command.Parser (commandParserInfo)
 import Options.Applicative (defaultPrefs, execParserPure, getParseResult)
@@ -59,6 +60,29 @@ spec = do
 
   it "rejects unknown assets options" $
     parse ["assets", "--unexpected"] `shouldBe` Nothing
+
+  it "defaults orders to open and descending with no limit" $
+    parse ["orders"] `shouldBe`
+      Just (Orders (OrdersCommand OpenOrders Nothing [] Descending Nothing))
+
+  it "accepts filters and repeated symbols with --out" $
+    parse ["orders", "--status", "all", "--limit", "100", "--symbol", "BTCUSD",
+           "--symbol", "AAPL", "--direction", "asc", "--out", "orders.json"]
+      `shouldBe`
+        Just (Orders (OrdersCommand AllOrders (Just 100) ["BTCUSD", "AAPL"] Ascending (Just "orders.json")))
+
+  it "accepts closed orders and crypto symbols containing a slash" $
+    parse ["orders", "--status", "closed", "--symbol", "BTC/USD"]
+      `shouldBe`
+        Just (Orders (OrdersCommand ClosedOrders Nothing ["BTC/USD"] Descending Nothing))
+
+  it "rejects invalid order parameters and missing arguments" $ do
+    map parse [["orders", "--limit", "0"], ["orders", "--limit", "501"],
+               ["orders", "--limit", "abc"], ["orders", "--status", "pending"],
+               ["orders", "--direction", "random"], ["orders", "--symbol", "AAPL,MSFT"],
+               ["orders", "--symbol"], ["orders", "--out"],
+               ["orders", "--unknown"]]
+      `shouldBe` replicate 9 Nothing
 
   it "rejects an unknown option" $
     parse ["account", "--unexpected"] `shouldBe` Nothing

@@ -10,8 +10,8 @@ synopsis:            Read-only Haskell CLI for Alpaca paper trading accounts
 category:            Network
 description:         |
   Unofficial Haskell command-line application for Alpaca's paper Trading API.
-  Supports reading paper account information, open positions, and available
-  assets, either as summaries or complete JSON. Does not support live trading
+  Supports reading paper account information, open positions, available
+  assets, and orders, either as summaries or complete JSON. Does not support live trading
   or order placement.
   See https://github.com/black-belt-badger/kirke for documentation.
 

@@ -7,7 +7,7 @@
 [![Haskell CI](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
-**Kirke** is an open-source, unofficial Haskell command-line application for accessing [Alpaca's Trading API](https://docs.alpaca.markets/). It offers **read-only account information, open positions, and asset discovery** from Alpaca paper trading. It is not affiliated with, sponsored by, or endorsed by Alpaca Markets.
+**Kirke** is an open-source, unofficial Haskell command-line application for accessing [Alpaca's Trading API](https://docs.alpaca.markets/). It offers **read-only account information, open positions, asset discovery, and order history** from Alpaca paper trading. It is not affiliated with, sponsored by, or endorsed by Alpaca Markets.
 
 The GitHub repository, Haskell package, and command-line executable are named **Kirke** (`kirke`). Its provider-specific Haskell modules intentionally remain under `Alpaca.*`.
 
@@ -27,10 +27,14 @@ The project is early in development. Its first goal is a small, useful, testable
 | `kirke assets` | List available crypto assets (explicit default) |
 | `kirke assets --asset-class us_equity` | List available US equities |
 | `kirke assets --status active --out PATH` | Filter assets and save original JSON privately |
+| `kirke orders` | List open paper orders (default: newest first) |
+| `kirke orders --status all --limit 100` | Include closed orders and limit the response |
+| `kirke orders --symbol BTCUSD --symbol AAPL` | Filter for several symbols |
+| `kirke orders --direction asc --out PATH` | Sort oldest first and save full JSON privately |
 
 The summary includes account number, status, currency, cash, equity, buying power, trading-blocked flag, and crypto status (when available).
 
-**Not implemented:** live-account access, trade submission, order management, market data, streaming, and shell completion. Listing positions does **not** close them or place orders. No trading decisions are made or orders placed.
+**Not implemented:** live-account access, trade submission, order cancellation, individual order lookup, market data, streaming, and shell completion. Listing positions does **not** close them or place orders. No trading decisions are made or orders placed.
 
 ## Requirements
 
@@ -178,6 +182,39 @@ stack exec -- kirke assets --asset-class crypto --status active --out output/ass
 Like the other `--out` commands, output uses an atomic write with owner-only file permissions (typically `0600` on Unix). The target directory must exist and the JSON remains unchanged, including provider fields beyond those displayed in the summary. No orders are submitted.
 
 Official API documentation: [GET /v2/assets](https://docs.alpaca.markets/us/reference/get-v2-assets-1).
+
+## Orders: read-only history
+
+Use the paper Trading API to list current open orders:
+
+```sh
+kirke orders
+```
+
+To include both open and closed orders, limit the number returned, and filter for
+specific assets:
+
+```sh
+kirke orders --status all --limit 100 --symbol BTCUSD --symbol AAPL
+```
+
+Supported filters:
+- `--status open|closed|all` (default `open`)
+- `--limit N` (1–500, default to Alpaca's 50 when omitted)
+- `--symbol SYMBOL` (repeatable; use `BTCUSD` for Alpaca crypto orders)
+- `--direction asc|desc` (default `desc`, newest first)
+- `--out PATH` to save complete original JSON instead of printing a summary
+
+Orders include IDs, symbols, side, type, status, exact string quantities,
+optional prices, and timestamps where supplied by Alpaca. Empty results print
+`No matching orders.` Order details, especially JSON output, may contain
+sensitive account information. The `--out` destination directory must exist;
+the file is written atomically with owner-only permissions on Unix.
+
+**This command only sends `GET /v2/orders` to the paper endpoint.**
+It does not submit, cancel, or modify orders.
+
+Official reference: [Alpaca Get All Orders](https://docs.alpaca.markets/us/reference/getallorders-1).
 
 ## Integration test (maintainers)
 

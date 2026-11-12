@@ -8,9 +8,19 @@ import Alpaca.Command.Assets
   , parseAssetStatus
   )
 import Alpaca.Command (Command (..))
+import Alpaca.Command.Orders
+  ( OrdersCommand (..)
+  , OrderFilter (OpenOrders)
+  , OrderDirection (Descending)
+  , parseOrderFilter
+  , parseOrderDirection
+  , parseOrderLimit
+  , parseOrderSymbol
+  )
 import Alpaca.Command.Positions (PositionsCommand (..))
 import Options.Applicative
   ( Parser
+  , many
   , ParserInfo
   , command
   , fullDesc
@@ -47,6 +57,9 @@ commandParser =
         <> command "assets"
           (info (Assets <$> assetsParser)
             (progDesc "List Alpaca paper assets (crypto by default)"))
+        <> command "orders"
+          (info (Orders <$> ordersParser)
+            (progDesc "List Alpaca paper orders (read-only)"))
     )
 
 accountParser :: Parser AccountCommand
@@ -70,6 +83,35 @@ assetsParser =
               <> metavar "STATUS"
               <> help "Filter by active, inactive, or all (default: no filter)"
           )
+      )
+    <*> outputParser
+
+ordersParser :: Parser OrdersCommand
+ordersParser =
+  OrdersCommand
+    <$> option (eitherReader parseOrderFilter)
+      ( long "status"
+          <> metavar "STATUS"
+          <> value OpenOrders
+          <> help "Orders to list: open (default), closed, all"
+      )
+    <*> optional
+      (option (eitherReader parseOrderLimit)
+        ( long "limit"
+            <> metavar "N"
+            <> help "Maximum orders (1-500; API default 50)"
+        ))
+    <*> many
+      (option (eitherReader parseOrderSymbol)
+        ( long "symbol"
+            <> metavar "SYMBOL"
+            <> help "Filter symbol; repeat for several (e.g. BTCUSD)"
+        ))
+    <*> option (eitherReader parseOrderDirection)
+      ( long "direction"
+          <> metavar "DIR"
+          <> value Descending
+          <> help "Sort order: desc (default), asc"
       )
     <*> outputParser
 
