@@ -7,7 +7,13 @@ Release headings are dated only when a release is published.
 
 ## Unreleased
 
-No changes yet.
+### Added
+- `kirke positions` lists all open crypto and equity positions from the Alpaca paper Trading API, preserving decimal strings.
+- `kirke positions --out PATH` saves complete positions JSON with owner-only permissions.
+- Offline tests for list decoding, null/missing optional fields, malformed data, safe HTTP handling, and private output.
+
+### Changed
+- Shared the paper-only authenticated HTTP request and private JSON file writer between account and positions commands.
 
 ## 0.1.0.0 — 2026-11-12
 

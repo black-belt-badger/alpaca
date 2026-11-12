@@ -5,6 +5,8 @@ module Alpaca.ClientSpec (spec) where
 import Alpaca.Client
   ( AlpacaError (..)
   , accountRequest
+  , positionsRequest
+  , interpretPaperResponse
   , alpacaErrorMessage
   , interpretAccountResponse
   )
@@ -24,6 +26,27 @@ spec = do
     port request `shouldBe` 443
     path request `shouldBe` "/v2/account"
     redirectCount request `shouldBe` 0
+
+  it "uses the same paper-only settings to request positions" $ do
+    let positions = positionsRequest credentials
+    method positions `shouldBe` "GET"
+    secure positions `shouldBe` True
+    host positions `shouldBe` "paper-api.alpaca.markets"
+    port positions `shouldBe` 443
+    path positions `shouldBe` "/v2/positions"
+    redirectCount positions `shouldBe` 0
+    requestHeaders positions `shouldBe` requestHeaders request
+
+  it "returns the complete positions JSON body on HTTP 200" $
+    interpretPaperResponse 200 "[]"
+      `shouldBe` Right "[]"
+
+  it "rejects redirected requests so credentials are never forwarded" $
+    interpretPaperResponse 302 "redirect target" `shouldBe` Left (UnexpectedStatus 302)
+
+  it "rejects HTTP errors without exposing the response body" $ do
+    interpretPaperResponse 401 "private content" `shouldBe` Left (UnexpectedStatus 401)
+    interpretPaperResponse 503 "provider details" `shouldBe` Left (UnexpectedStatus 503)
 
   it "sets both authentication headers" $ do
     lookup "APCA-API-KEY-ID" (requestHeaders request)

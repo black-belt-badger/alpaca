@@ -10,19 +10,14 @@ import Alpaca.Client (alpacaErrorMessage, fetchAccount)
 import Alpaca.Command.Account (AccountCommand (..))
 import Alpaca.Credentials (credentialErrorMessage, loadCredentials)
 import Alpaca.Domain.Account (Account (..), decodeAccount)
-import Control.Exception (IOException, displayException, onException, try)
-import Control.Monad (unless)
+import Alpaca.Output (savePrivateJson)
+import Control.Exception (IOException, displayException, try)
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as ByteString
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as TextIO
-import System.Directory (removeFile, renameFile)
 import System.Exit (die)
-import System.FilePath (takeDirectory)
-import System.IO (Handle, hClose, hIsClosed, openBinaryTempFile)
-import System.IO.Error (catchIOError)
 
 runAccount :: AccountCommand -> IO ()
 runAccount options = do
@@ -54,17 +49,6 @@ renderAccountSummary account =
     , "Crypto status: " <> fromMaybe "not provided" (accountCryptoStatus account)
     ]
 
--- | Write to a private temporary file, then replace the destination atomically.
--- openBinaryTempFile creates files with owner-only permissions on Unix.
+-- | Kept for compatibility with account tests and downstream users.
 saveAccountJson :: FilePath -> ByteString -> IO ()
-saveAccountJson path bytes = do
-  (temporary, handle) <- openBinaryTempFile (takeDirectory path) ".kirke-account-"
-  let cleanup = cleanupTemporary temporary handle
-  (ByteString.hPut handle bytes >> hClose handle >> renameFile temporary path)
-    `onException` cleanup
-
-cleanupTemporary :: FilePath -> Handle -> IO ()
-cleanupTemporary temporary handle = do
-  closed <- hIsClosed handle
-  unless closed (hClose handle)
-  removeFile temporary `catchIOError` const (pure ())
+saveAccountJson = savePrivateJson
