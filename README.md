@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/fancy.png" alt="Kirke — Celtic-knot logo and wordmark" width="760">
+</p>
+
 # Kirke — Haskell CLI for Alpaca's paper Trading API
 
 [![Haskell CI](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml)
