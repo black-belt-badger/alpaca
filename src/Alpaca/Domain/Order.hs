@@ -3,6 +3,7 @@
 module Alpaca.Domain.Order
   ( Order (..)
   , decodeOrders
+  , decodeOrder
   ) where
 
 import Data.Aeson (FromJSON (..), eitherDecodeStrict', withObject, (.:), (.:?))
@@ -51,6 +52,10 @@ instance FromJSON Order where
       <*> o .: "created_at"
       <*> o .:? "submitted_at"
       <*> o .:? "filled_at"
+
+-- | GET /v2/orders/{order_id} returns an object, not an array.
+decodeOrder :: ByteString -> Either String Order
+decodeOrder = eitherDecodeStrict'
 
 decodeOrders :: ByteString -> Either String [Order]
 decodeOrders = eitherDecodeStrict'

@@ -2,6 +2,7 @@ module Alpaca.Command (Command (..)) where
 
 import Alpaca.Command.Account (AccountCommand)
 import Alpaca.Command.Assets (AssetsCommand)
+import Alpaca.Command.Order (OrderCommand)
 import Alpaca.Command.Orders (OrdersCommand)
 import Alpaca.Command.Positions (PositionsCommand)
 
@@ -11,4 +12,5 @@ data Command
   | Positions PositionsCommand
   | Assets AssetsCommand
   | Orders OrdersCommand
+  | Order OrderCommand
   deriving (Eq, Show)

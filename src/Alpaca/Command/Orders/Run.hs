@@ -3,6 +3,7 @@
 module Alpaca.Command.Orders.Run
   ( runOrders
   , renderOrdersSummary
+  , renderOrderSummary
   ) where
 
 import Alpaca.Client (alpacaErrorMessage, fetchOrders)
@@ -37,6 +38,10 @@ renderOrdersSummary orders =
       <> if null orders
         then ["No matching orders."]
         else ("Orders: " <> Text.pack (show (length orders))) : concatMap renderOrder orders
+
+-- | Reuse the same field rendering for list and single-order lookups.
+renderOrderSummary :: Order -> Text
+renderOrderSummary order = Text.unlines ("Kirke — Alpaca paper order" : renderOrder order)
 
 renderOrder :: Order -> [Text]
 renderOrder order =

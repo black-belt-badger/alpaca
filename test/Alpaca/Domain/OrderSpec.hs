@@ -2,7 +2,7 @@
 
 module Alpaca.Domain.OrderSpec (spec) where
 
-import Alpaca.Domain.Order (Order (..), decodeOrders)
+import Alpaca.Domain.Order (Order (..), decodeOrder, decodeOrders)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as Bytes
 import Data.Either (isLeft)
@@ -20,6 +20,25 @@ spec = do
     fmap (map orderNotional) decoded `shouldBe` Right [Nothing, Just "123.45000000"]
     fmap (map orderFilledAvgPrice) decoded `shouldBe` Right [Just "90000.123456789", Nothing]
     fmap (map orderState) decoded `shouldBe` Right ["filled", "new"]
+
+  it "decodes an individual order with missing/null optional fields" $ do
+    let response = "{\"id\":\"id\",\"client_order_id\":\"client\",\"symbol\":\"SOLUSD\",\"side\":\"buy\",\"type\":\"market\",\"status\":\"new\",\"filled_qty\":\"0.00000000000001\",\"created_at\":\"2026-11-13T00:00:00Z\",\"qty\":null,\"submitted_at\":null,\"legs\":[{\"provider_specific\":true}]}"
+    fmap orderSymbol (decodeOrder response) `shouldBe` Right "SOLUSD"
+    fmap orderFilledQty (decodeOrder response) `shouldBe` Right "0.00000000000001"
+    fmap orderQty (decodeOrder response) `shouldBe` Right Nothing
+    fmap orderFilledAt (decodeOrder response) `shouldBe` Right Nothing
+    fmap orderAssetClass (decodeOrder response) `shouldBe` Right Nothing
+
+  it "rejects empty, array, wrong-shape, and malformed single order payloads" $ do
+    decodeOrder "" `shouldSatisfy` isLeft
+    decodeOrder "[]" `shouldSatisfy` isLeft
+    decodeOrder "{}" `shouldSatisfy` isLeft
+    decodeOrder "null" `shouldSatisfy` isLeft
+    decodeOrder "{invalid" `shouldSatisfy` isLeft
+
+  it "rejects numeric financial fields in single-order responses" $
+    decodeOrder "{\"id\":\"id\",\"client_order_id\":\"client\",\"symbol\":\"SOLUSD\",\"side\":\"buy\",\"type\":\"market\",\"status\":\"new\",\"filled_qty\":0.01,\"created_at\":\"2026-11-13T00:00:00Z\"}"
+      `shouldSatisfy` isLeft
 
   it "accepts an empty order list" $
     decodeOrders "[]" `shouldBe` Right []

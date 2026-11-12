@@ -6,6 +6,8 @@ module Alpaca.Client
   , fetchPositions
   , fetchAssets
   , fetchOrders
+  , fetchOrder
+  , orderRequest
   , ordersRequest
   , assetsRequest
   , positionsRequest
@@ -22,6 +24,7 @@ import Data.List (intercalate)
 import qualified Data.ByteString.Lazy as Lazy
 import Data.Text.Encoding (encodeUtf8)
 import Alpaca.Command.Assets (AssetClass, AssetStatus, assetClassParameter, assetStatusParameter)
+import Alpaca.Command.Order (OrderGetCommand (..), orderIdSegment)
 import Alpaca.Credentials (Credentials (..))
 import Alpaca.Command.Orders (OrdersCommand (..), orderStatusParameter, orderDirectionParameter)
 import Network.HTTP.Client
@@ -62,6 +65,10 @@ fetchAssets credentials assetClass status =
 fetchOrders :: Credentials -> OrdersCommand -> IO (Either AlpacaError ByteString)
 fetchOrders credentials = fetchPaper . ordersRequest credentials
 
+-- | Fetch a single paper order by its server-issued UUID.
+fetchOrder :: Credentials -> OrderGetCommand -> IO (Either AlpacaError ByteString)
+fetchOrder credentials = fetchPaper . orderRequest credentials
+
 fetchPaper :: Request -> IO (Either AlpacaError ByteString)
 fetchPaper request = do
   result <-
@@ -100,6 +107,14 @@ ordersRequest credentials options =
         <> [("direction", Just (orderDirectionParameter (ordersDirection options)))]
     )
     (paperRequest credentials "/v2/orders")
+
+-- | UUID validation happens in the abstract OrderId constructor. A validated
+-- path segment cannot escape /v2/orders or inject query parameters.
+orderRequest :: Credentials -> OrderGetCommand -> Request
+orderRequest credentials options =
+  setQueryString
+    (if getOrderNested options then [("nested", Just "true")] else [])
+    (paperRequest credentials ("/v2/orders/" <> orderIdSegment (getOrderId options)))
 
 paperRequest :: Credentials -> String -> Request
 paperRequest credentials endpoint =

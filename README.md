@@ -31,6 +31,8 @@ The project is early in development. Its first goal is a small, useful, testable
 | `kirke orders --status all --limit 10` | Inspect up to 10 recent orders |
 | `kirke orders --symbols BTCUSD,ETHUSD --direction asc` | Filter orders by symbol and submission order |
 | `kirke orders --out PATH` | Save complete, unmodified order JSON privately |
+| `kirke order get ORDER_ID` | Fetch an individual paper order using its server UUID |
+| `kirke order get ORDER_ID --nested --out PATH` | Include nested order legs when supported; save complete private JSON |
 
 The summary includes account number, status, currency, cash, equity, buying power, trading-blocked flag, and crypto status (when available).
 
@@ -204,9 +206,23 @@ stack exec -- kirke orders --status all --limit 10 --out output/orders.json
 
 JSON files are private and atomically replaced (typically mode `0600`). Both summaries and order JSON can reveal personal portfolio activity. **No order is placed, modified or canceled.** For historical queries beyond the latest 500, a future ticket will provide explicit pagination. Reference: [Alpaca GET /v2/orders](https://docs.alpaca.markets/us/reference/getallorders-1).
 
+## Order details: fetch by server UUID
+
+Look up a single order using the **server-issued UUID** (the `id` field in `kirke orders --out`, not `client_order_id`):
+
+```sh
+stack exec -- kirke order get 9275f66a-0a1b-4a22-8c55-167416c7cf14
+stack exec -- kirke order get 9275f66a-0a1b-4a22-8c55-167416c7cf14 --nested
+stack exec -- kirke order get 9275f66a-0a1b-4a22-8c55-167416c7cf14 --out output/order.json
+```
+
+The UUID above is an **illustrative placeholder**, not a real order. Use an ID from your paper account. Kirke validates canonical UUID syntax before sending a request, and `--nested` adds Alpaca's optional `nested=true` parameter, which rolls up multi-leg orders. Without `--nested`, no query parameter is sent. A missing order produces a distinct `HTTP 404` diagnostic; other HTTP, credential, connection and invalid-JSON failures remain separate. A successful response is an **order object**, not an array. The readable view reuses order-listing fields, preserving decimal strings and nullable values. JSON output preserves the complete provider object, including nested `legs` when supplied, and uses the same private atomic writer as other commands.
+
+This command is read-only and calls only the **paper trading** API. It never submits, modifies or cancels an order. API reference: [GET /v2/orders/{order_id}](https://docs.alpaca.markets/us/reference/getorderbyorderid-1).
+
 ## Integration test (maintainers)
 
-`scripts/it.sh` performs live requests against the **paper** API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials`, installs the local CLI using Stack, writes account, positions, assets, and orders files under the ignored `output/` directory, checks JSON structures using `jq`, and verifies private file permissions using GNU `stat`.
+`scripts/it.sh` performs live requests against the **paper** API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials`, installs the local CLI using Stack, writes account, positions, assets, order-listing and order-detail files under the ignored `output/` directory, checks JSON structures using `jq`, and verifies private file permissions using GNU `stat`.
 
 On a trusted Linux machine with paper credentials, `jq`, and Stack's executable directory on `PATH`:
 

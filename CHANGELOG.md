@@ -8,6 +8,8 @@ Release headings are dated only when a release is published.
 ## Unreleased
 
 ### Added
+- `kirke order get ORDER_ID` fetches one paper order using a validated UUID, with optional `--nested` and private `--out PATH` for complete JSON.
+- The single-order command shares the typed order decoder and display fields, distinguishes HTTP 404 from authentication/transport failures, and has offline and paper API tests.
 - `kirke orders` lists paper orders with typed status, limit, symbols and direction filters, maintaining exact decimal-string financial values.
 - `kirke orders --out PATH` saves full provider JSON privately; offline and paper integration checks cover queries, null/empty results, and secure output.
 - `kirke assets` lists crypto assets by default; `--asset-class` and `--status` control server-side filters.

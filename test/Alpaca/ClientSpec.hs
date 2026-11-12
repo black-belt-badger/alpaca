@@ -7,12 +7,14 @@ import Alpaca.Client
   , accountRequest
   , assetsRequest
   , ordersRequest
+  , orderRequest
   , positionsRequest
   , interpretPaperResponse
   , alpacaErrorMessage
   , interpretAccountResponse
   )
 import Alpaca.Command.Assets (AssetClass (..), AssetStatus (..))
+import Alpaca.Command.Order (OrderGetCommand (..), parseOrderId)
 import Alpaca.Command.Orders (OrderDirection (..), OrderStatus (..), OrdersCommand (..))
 import Alpaca.Credentials (Credentials (..))
 import Network.HTTP.Client (Request (..))
@@ -76,6 +78,28 @@ spec = do
   it "encodes filtered orders, including multiple symbols and sort direction" $ do
     let orders = ordersRequest credentials (OrdersCommand OrdersAll (Just 500) (Just ["BTCUSD", "AAPL"]) Asc Nothing)
     queryString orders `shouldBe` "?status=all&limit=500&symbols=BTCUSD%2CAAPL&direction=asc"
+
+  it "uses a validated UUID to fetch a single paper order, without query by default" $ do
+    let uuid = "9275f66a-0a1b-4a22-8c55-167416c7cf14"
+        orderId = either error id (parseOrderId uuid)
+        order = orderRequest credentials (OrderGetCommand orderId False Nothing)
+    method order `shouldBe` "GET"
+    secure order `shouldBe` True
+    host order `shouldBe` "paper-api.alpaca.markets"
+    port order `shouldBe` 443
+    path order `shouldBe` "/v2/orders/9275f66a-0a1b-4a22-8c55-167416c7cf14"
+    queryString order `shouldBe` ""
+    redirectCount order `shouldBe` 0
+    requestHeaders order `shouldBe` requestHeaders request
+
+  it "only includes nested=true when explicitly requested" $ do
+    let orderId = either error id (parseOrderId "9275f66a-0a1b-4a22-8c55-167416c7cf14")
+        order = orderRequest credentials (OrderGetCommand orderId True Nothing)
+    queryString order `shouldBe` "?nested=true"
+
+  it "distinguishes HTTP 404 from 401 without exposing provider body" $ do
+    interpretPaperResponse 404 "private provider error" `shouldBe` Left (UnexpectedStatus 404)
+    interpretPaperResponse 401 "private provider error" `shouldBe` Left (UnexpectedStatus 401)
 
   it "returns the complete positions JSON body on HTTP 200" $
     interpretPaperResponse 200 "[]"

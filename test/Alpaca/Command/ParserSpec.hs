@@ -2,6 +2,7 @@ module Alpaca.Command.ParserSpec (spec) where
 
 import Alpaca.Command.Account (AccountCommand (..))
 import Alpaca.Command.Assets (AssetClass (..), AssetStatus (..), AssetsCommand (..))
+import Alpaca.Command.Order (OrderCommand (..), OrderGetCommand (..), parseOrderId)
 import Alpaca.Command.Orders (OrderDirection (..), OrderStatus (..), OrdersCommand (..))
 import Alpaca.Command.Positions (PositionsCommand (..))
 import Alpaca.Command (Command (..))
@@ -86,6 +87,31 @@ spec = do
   it "rejects missing order option values" $ do
     mapM_ (\flag -> parse ["orders", flag] `shouldBe` Nothing)
       ["--limit", "--status", "--symbols", "--direction", "--out"]
+
+  it "parses a single order lookup by UUID" $ do
+    let uuid = "9275f66a-0a1b-4a22-8c55-167416c7cf14"
+        orderId = either error id (parseOrderId uuid)
+    parse ["order", "get", uuid]
+      `shouldBe` Just (Order (GetOrder (OrderGetCommand orderId False Nothing)))
+
+  it "parses nested lookup and private JSON output" $ do
+    let uuid = "9275f66a-0a1b-4a22-8c55-167416c7cf14"
+        orderId = either error id (parseOrderId uuid)
+    parse ["order", "get", uuid, "--nested", "--out", "order.json"]
+      `shouldBe` Just (Order (GetOrder (OrderGetCommand orderId True (Just "order.json"))))
+
+  it "rejects a missing, blank or malformed order ID" $ do
+    parse ["order", "get"] `shouldBe` Nothing
+    parse ["order", "get", ""] `shouldBe` Nothing
+    parse ["order", "get", "not-a-uuid"] `shouldBe` Nothing
+    parse ["order", "get", "../account"] `shouldBe` Nothing
+
+  it "rejects missing output paths and unexpected order-get options" $ do
+    let uuid = "9275f66a-0a1b-4a22-8c55-167416c7cf14"
+    parse ["order", "get", uuid, "--out"] `shouldBe` Nothing
+    parse ["order", "get", uuid, "--unknown"] `shouldBe` Nothing
+    parse ["order", "unknown", uuid] `shouldBe` Nothing
+    parse ["order"] `shouldBe` Nothing
 
   it "rejects an unknown order option" $
     parse ["orders", "--unexpected"] `shouldBe` Nothing
