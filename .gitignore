@@ -27,6 +27,7 @@ data/
 *.log
 
 # Editors and temporary files
+*.iml
 .idea/
 .vscode/
 *~
