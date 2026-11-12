@@ -1,35 +1,39 @@
 name:                alpaca
 version:             0.1.0.0
-github:              "githubuser/alpaca"
+github:              "black-belt-badger/alpaca"
 license:             BSD-3-Clause
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2026 Author name here"
+license-file:        LICENSE
+author:              "Marek Dudek"
+maintainer:          "Marek Dudek"
+copyright:           "2026 Marek Dudek"
+synopsis:            Read-only Haskell CLI for Alpaca paper trading accounts
+category:            Network
+description:         |
+  Unofficial Haskell command-line application for Alpaca's paper Trading API.
+  Currently supports fetching an account summary or saving the complete JSON
+  response. Does not support live trading or order placement.
+  See https://github.com/black-belt-badger/alpaca for documentation.
 
 extra-source-files:
 - README.md
+- CONTRIBUTING.md
+- RELEASING.md
+- SECURITY.md
+
+extra-doc-files:
 - CHANGELOG.md
 
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
-
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/alpaca#readme>
-
 dependencies:
-  aeson: {}
+  aeson: ">= 2.2 && < 2.3"
   base: ">= 4.7 && < 5"
-  bytestring: {}
-  directory: {}
-  filepath: {}
-  http-client: {}
-  http-client-tls: {}
-  http-types: {}
-  optparse-applicative: {}
-  text: {}
+  bytestring: ">= 0.12 && < 0.13"
+  directory: ">= 1.3 && < 1.4"
+  filepath: ">= 1.5 && < 1.6"
+  http-client: ">= 0.7 && < 0.8"
+  http-client-tls: ">= 0.3 && < 0.4"
+  http-types: ">= 0.12 && < 0.13"
+  optparse-applicative: ">= 0.18 && < 0.19"
+  text: ">= 2.1 && < 2.2"
 
 ghc-options:
 - -Wall
@@ -68,5 +72,5 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - alpaca
-    - hspec
-    - unix
+    - "hspec >= 2.11 && < 2.12"
+    - "unix >= 2.8 && < 2.9"
