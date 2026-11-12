@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/fancy.png" alt="Kirke — Celtic-knot logo and wordmark" width="760">
+  <img src="docs/fancy.webp" alt="Kirke — Celtic-knot logo and wordmark" width="760">
 </p>
 
 # Kirke — Haskell CLI for Alpaca's paper Trading API
