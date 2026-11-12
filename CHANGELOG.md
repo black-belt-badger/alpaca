@@ -8,6 +8,8 @@ Release headings are dated only when a release is published.
 ## Unreleased
 
 ### Added
+- `kirke assets` lists crypto assets by default; `--asset-class` and `--status` control server-side filters.
+- `kirke assets --out PATH` saves complete assets JSON privately, with tests for query construction, decoding, optional fields, and empty results.
 - `kirke positions` lists all open crypto and equity positions from the Alpaca paper Trading API, preserving decimal strings.
 - `kirke positions --out PATH` saves complete positions JSON with owner-only permissions.
 - Offline tests for list decoding, null/missing optional fields, malformed data, safe HTTP handling, and private output.

@@ -5,11 +5,13 @@ module Alpaca.ClientSpec (spec) where
 import Alpaca.Client
   ( AlpacaError (..)
   , accountRequest
+  , assetsRequest
   , positionsRequest
   , interpretPaperResponse
   , alpacaErrorMessage
   , interpretAccountResponse
   )
+import Alpaca.Command.Assets (AssetClass (..), AssetStatus (..))
 import Alpaca.Credentials (Credentials (..))
 import Network.HTTP.Client (Request (..))
 import Test.Hspec (Spec, it, shouldBe)
@@ -36,6 +38,27 @@ spec = do
     path positions `shouldBe` "/v2/positions"
     redirectCount positions `shouldBe` 0
     requestHeaders positions `shouldBe` requestHeaders request
+
+  it "requests crypto assets explicitly, never implicit equities" $ do
+    let assets = assetsRequest credentials Crypto Nothing
+    method assets `shouldBe` "GET"
+    secure assets `shouldBe` True
+    host assets `shouldBe` "paper-api.alpaca.markets"
+    port assets `shouldBe` 443
+    path assets `shouldBe` "/v2/assets"
+    queryString assets `shouldBe` "?asset_class=crypto"
+    requestHeaders assets `shouldBe` requestHeaders request
+    redirectCount assets `shouldBe` 0
+
+  it "constructs filtered equity asset requests" $ do
+    let assets = assetsRequest credentials UsEquity (Just Active)
+    queryString assets `shouldBe` "?asset_class=us_equity&status=active"
+
+  it "supports inactive and all status filters" $ do
+    queryString (assetsRequest credentials Crypto (Just Inactive))
+      `shouldBe` "?asset_class=crypto&status=inactive"
+    queryString (assetsRequest credentials Crypto (Just All))
+      `shouldBe` "?asset_class=crypto&status=all"
 
   it "returns the complete positions JSON body on HTTP 200" $
     interpretPaperResponse 200 "[]"

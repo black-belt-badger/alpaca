@@ -4,6 +4,8 @@ module Alpaca.Client
   ( AlpacaError (..)
   , fetchAccount
   , fetchPositions
+  , fetchAssets
+  , assetsRequest
   , positionsRequest
   , interpretPaperResponse
   , accountRequest
@@ -15,6 +17,7 @@ import Control.Exception (try)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as Lazy
 import Data.Text.Encoding (encodeUtf8)
+import Alpaca.Command.Assets (AssetClass, AssetStatus, assetClassParameter, assetStatusParameter)
 import Alpaca.Credentials (Credentials (..))
 import Network.HTTP.Client
   ( HttpException
@@ -26,6 +29,7 @@ import Network.HTTP.Client
   , responseBody
   , responseStatus
   , responseTimeoutMicro
+  , setQueryString
   )
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Types.Status (statusCode)
@@ -43,6 +47,11 @@ fetchAccount = fetchPaper . accountRequest
 -- | Retrieve open positions from the same authenticated paper Trading API.
 fetchPositions :: Credentials -> IO (Either AlpacaError ByteString)
 fetchPositions = fetchPaper . positionsRequest
+
+-- | Asset class is explicitly supplied, since Alpaca defaults to equities.
+fetchAssets :: Credentials -> AssetClass -> Maybe AssetStatus -> IO (Either AlpacaError ByteString)
+fetchAssets credentials assetClass status =
+  fetchPaper (assetsRequest credentials assetClass status)
 
 fetchPaper :: Request -> IO (Either AlpacaError ByteString)
 fetchPaper request = do
@@ -62,6 +71,16 @@ accountRequest credentials = paperRequest credentials "/v2/account"
 
 positionsRequest :: Credentials -> Request
 positionsRequest credentials = paperRequest credentials "/v2/positions"
+
+-- | Construct the query with HTTP-client's encoding, never by interpolating
+-- untrusted query text into a URL. The filters are typed allowed values.
+assetsRequest :: Credentials -> AssetClass -> Maybe AssetStatus -> Request
+assetsRequest credentials classFilter statusFilter =
+  setQueryString
+    ( [("asset_class", Just (assetClassParameter classFilter))]
+        <> maybe [] (\status -> [("status", Just (assetStatusParameter status))]) statusFilter
+    )
+    (paperRequest credentials "/v2/assets")
 
 paperRequest :: Credentials -> String -> Request
 paperRequest credentials endpoint =

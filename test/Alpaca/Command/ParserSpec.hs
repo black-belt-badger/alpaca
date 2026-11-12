@@ -1,6 +1,7 @@
 module Alpaca.Command.ParserSpec (spec) where
 
 import Alpaca.Command.Account (AccountCommand (..))
+import Alpaca.Command.Assets (AssetClass (..), AssetStatus (..), AssetsCommand (..))
 import Alpaca.Command.Positions (PositionsCommand (..))
 import Alpaca.Command (Command (..))
 import Alpaca.Command.Parser (commandParserInfo)
@@ -31,6 +32,33 @@ spec = do
 
   it "rejects an unknown positions option" $
     parse ["positions", "--unexpected"] `shouldBe` Nothing
+
+  it "defaults assets to the crypto class with no status filter" $
+    parse ["assets"] `shouldBe` Just (Assets (AssetsCommand Crypto Nothing Nothing))
+
+  it "parses all supported asset filters and JSON output" $
+    parse ["assets", "--asset-class", "us_equity", "--status", "active", "--out", "assets.json"]
+      `shouldBe` Just (Assets (AssetsCommand UsEquity (Just Active) (Just "assets.json")))
+
+  it "parses an explicit crypto class and all statuses" $
+    parse ["assets", "--asset-class", "crypto", "--status", "all"]
+      `shouldBe` Just (Assets (AssetsCommand Crypto (Just All) Nothing))
+
+  it "parses an inactive status" $
+    parse ["assets", "--status", "inactive"]
+      `shouldBe` Just (Assets (AssetsCommand Crypto (Just Inactive) Nothing))
+
+  it "rejects an unsupported asset class or status" $ do
+    parse ["assets", "--asset-class", "options"] `shouldBe` Nothing
+    parse ["assets", "--status", "anything"] `shouldBe` Nothing
+
+  it "rejects missing asset argument values" $ do
+    parse ["assets", "--out"] `shouldBe` Nothing
+    parse ["assets", "--status"] `shouldBe` Nothing
+    parse ["assets", "--asset-class"] `shouldBe` Nothing
+
+  it "rejects unknown assets options" $
+    parse ["assets", "--unexpected"] `shouldBe` Nothing
 
   it "rejects an unknown option" $
     parse ["account", "--unexpected"] `shouldBe` Nothing
