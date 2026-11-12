@@ -43,7 +43,7 @@ orDie render = either (die . render) pure
 renderAccountSummary :: Account -> Text
 renderAccountSummary account =
   Text.unlines
-    [ "Alpaca paper account"
+    [ "Kirke — Alpaca paper account"
     , "Account number: " <> accountNumber account
     , "Status: " <> accountStatus account
     , "Currency: " <> accountCurrency account
@@ -58,7 +58,7 @@ renderAccountSummary account =
 -- openBinaryTempFile creates files with owner-only permissions on Unix.
 saveAccountJson :: FilePath -> ByteString -> IO ()
 saveAccountJson path bytes = do
-  (temporary, handle) <- openBinaryTempFile (takeDirectory path) ".alpaca-account-"
+  (temporary, handle) <- openBinaryTempFile (takeDirectory path) ".kirke-account-"
   let cleanup = cleanupTemporary temporary handle
   (ByteString.hPut handle bytes >> hClose handle >> renameFile temporary path)
     `onException` cleanup

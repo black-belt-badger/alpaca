@@ -1,6 +1,6 @@
 # Releasing Kirke (maintainers)
 
-Kirke is an **unofficial** Haskell client and CLI for Alpaca's APIs. The Haskell package remains `alpaca`; its executable is named `kirke`. The first release covers **paper account access only**.
+Kirke is an **unofficial** Haskell client and CLI for Alpaca's APIs. The Haskell package and executable are both named `kirke`; provider-specific modules remain under `Alpaca.*`. The first release covers **paper account access only**.
 
 ## Versioning
 
