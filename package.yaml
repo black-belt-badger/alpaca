@@ -23,6 +23,8 @@ dependencies:
   aeson: {}
   base: ">= 4.7 && < 5"
   bytestring: {}
+  directory: {}
+  filepath: {}
   http-client: {}
   http-client-tls: {}
   http-types: {}
@@ -67,3 +69,4 @@ tests:
     dependencies:
     - alpaca
     - hspec
+    - unix
