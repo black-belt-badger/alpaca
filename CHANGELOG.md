@@ -8,8 +8,8 @@ Release headings are dated only when a release is published.
 ## Unreleased
 
 ### Added
-- `alpaca account` retrieves a paper trading account and prints a readable summary.
-- `alpaca account --out PATH` preserves the full JSON response in an owner-only file.
+- `kirke account` retrieves a paper trading account and prints a readable summary.
+- `kirke account --out PATH` preserves the full JSON response in an owner-only file.
 - Offline Hspec tests and a GitHub Actions build-and-test workflow.
 - Contributor issue forms, pull request template, and contributing guide.
 

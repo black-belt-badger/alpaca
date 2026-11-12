@@ -1,6 +1,6 @@
 name:                alpaca
 version:             0.1.0.0
-github:              "black-belt-badger/alpaca"
+github:              "black-belt-badger/kirke"
 license:             BSD-3-Clause
 license-file:        LICENSE
 author:              "Marek Dudek"
@@ -12,7 +12,7 @@ description:         |
   Unofficial Haskell command-line application for Alpaca's paper Trading API.
   Currently supports fetching an account summary or saving the complete JSON
   response. Does not support live trading or order placement.
-  See https://github.com/black-belt-badger/alpaca for documentation.
+  See https://github.com/black-belt-badger/kirke for documentation.
 
 extra-source-files:
 - README.md
@@ -50,8 +50,8 @@ library:
   source-dirs: src
 
 executables:
-  alpaca:
-    main:                Alpaca.hs
+  kirke:
+    main:                Kirke.hs
     source-dirs:         app
     ghc-options:
     - -threaded

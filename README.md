@@ -1,9 +1,11 @@
-# Alpaca — Haskell CLI for Alpaca's paper Trading API
+# Kirke — Haskell CLI for Alpaca's paper Trading API
 
-[![Haskell CI](https://github.com/black-belt-badger/alpaca/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/black-belt-badger/alpaca/actions/workflows/haskell-ci.yml)
+[![Haskell CI](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
-**Alpaca** is an open-source, unofficial Haskell command-line application for accessing [Alpaca's Trading API](https://docs.alpaca.markets/). It currently offers **read-only access to a paper trading account**. It is not affiliated with, sponsored by, or endorsed by Alpaca Markets.
+**Kirke** is an open-source, unofficial Haskell command-line application for accessing [Alpaca's Trading API](https://docs.alpaca.markets/). It currently offers **read-only access to a paper trading account**. It is not affiliated with, sponsored by, or endorsed by Alpaca Markets.
+
+The GitHub repository and command-line executable are named **Kirke** (`kirke`); the internal Haskell package remains `alpaca`.
 
 The project is early in development. Its first goal is a small, useful, testable CLI; additional commands may follow as separate issues.
 
@@ -11,10 +13,10 @@ The project is early in development. Its first goal is a small, useful, testable
 
 | Command | Behavior |
 | --- | --- |
-| `alpaca --help` | List commands and general options |
-| `alpaca account --help` | Show account-specific options |
-| `alpaca account` | Fetch a paper account and print a readable summary |
-| `alpaca account --out PATH` | Fetch a paper account and save the complete API JSON response |
+| `kirke --help` | List commands and general options |
+| `kirke account --help` | Show account-specific options |
+| `kirke account` | Fetch a paper account and print a readable summary |
+| `kirke account --out PATH` | Fetch a paper account and save the complete API JSON response |
 
 The summary includes account number, status, currency, cash, equity, buying power, trading-blocked flag, and crypto status (when available).
 
@@ -32,14 +34,14 @@ The repository pins a Stackage snapshot in `stack.yaml` and tracks `stack.yaml.l
 ## Build and test
 
 ```sh
-git clone https://github.com/black-belt-badger/alpaca.git
-cd alpaca
+git clone https://github.com/black-belt-badger/kirke.git
+cd kirke
 stack build
 stack test
-stack exec -- alpaca --help
+stack exec -- kirke --help
 ```
 
-Offline tests do **not** require an Alpaca account or credentials. The same build and test commands run in [GitHub Actions CI](https://github.com/black-belt-badger/alpaca/actions).
+Offline tests do **not** require an Alpaca account or credentials. The same build and test commands run in [GitHub Actions CI](https://github.com/black-belt-badger/kirke/actions).
 
 For local installation instead of `stack exec`, run `stack install` and make sure Stack's executable installation directory is on your `PATH`.
 
@@ -83,7 +85,7 @@ For a nondefault config location, the developer-only integration script respects
 Print your paper account summary:
 
 ```sh
-stack exec -- alpaca account
+stack exec -- kirke account
 ```
 
 Illustrative output (account details deliberately omitted):
@@ -107,7 +109,7 @@ Save the original, **complete** response as JSON:
 ```sh
 mkdir -p output
 chmod 700 output
-stack exec -- alpaca account --out output/account.json
+stack exec -- kirke account --out output/account.json
 ```
 
 On Unix, the CLI writes through a private temporary file and atomically replaces the destination, resulting in owner-only file permissions (typically `0600`). The parent directory must already exist. Use a private directory; the full API response can contain additional sensitive account data.
@@ -128,7 +130,7 @@ This is **not** run by public CI; CI uses only offline tests.
 
 ## Development and roadmap
 
-Work is tracked in [GitHub Issues](https://github.com/black-belt-badger/alpaca/issues) and pull requests. The first release milestone is [v0.1.0.0](https://github.com/black-belt-badger/alpaca/milestone/1); versions follow the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
+Work is tracked in [GitHub Issues](https://github.com/black-belt-badger/kirke/issues) and pull requests. The first release milestone is [v0.1.0.0](https://github.com/black-belt-badger/kirke/milestone/1); versions follow the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
 A separate Rust implementation called **Medea** is planned to reproduce the same outward behavior with idiomatic Rust code and independent versioning. It is not yet publicly available. Feature parity is a learning and compatibility goal, not a guarantee that both projects already expose the same functionality.
 

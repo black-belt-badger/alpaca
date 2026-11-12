@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in this **unofficial** community project for Alpaca API access in Haskell. It is not affiliated with or endorsed by Alpaca.
+Thanks for your interest in **Kirke**, an **unofficial** community Haskell project for Alpaca API access. It is not affiliated with or endorsed by Alpaca.
 
 ## Before coding
 
