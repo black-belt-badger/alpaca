@@ -21,6 +21,10 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
   base: ">= 4.7 && < 5"
+  bytestring: {}
+  http-client: {}
+  http-client-tls: {}
+  http-types: {}
   optparse-applicative: {}
   text: {}
 
@@ -53,6 +57,8 @@ tests:
   alpaca-test:
     main:                Spec.hs
     source-dirs:         test
+    build-tools:
+    - hspec-discover:hspec-discover
     ghc-options:
     - -threaded
     - -rtsopts
