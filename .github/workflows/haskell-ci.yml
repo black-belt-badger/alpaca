@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -35,7 +35,7 @@ jobs:
           cabal-update: false
 
       - name: Cache Stack dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.stack
           key: ${{ runner.os }}-ghc-9.10.3-stack-${{ hashFiles('stack.yaml', 'stack.yaml.lock', 'package.yaml') }}
