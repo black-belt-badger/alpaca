@@ -6,6 +6,9 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 umask 077
 mkdir -p output
 
+# Load local paper-trading credentials without placing them in the repository.
+source "${XDG_CONFIG_HOME:-$HOME/.config}/alpaca/credentials"
+
 stack install
 
 alpaca --help
