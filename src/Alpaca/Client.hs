@@ -5,6 +5,8 @@ module Alpaca.Client
   , fetchAccount
   , fetchPositions
   , fetchAssets
+  , fetchOrders
+  , ordersRequest
   , assetsRequest
   , positionsRequest
   , interpretPaperResponse
@@ -15,10 +17,13 @@ module Alpaca.Client
 
 import Control.Exception (try)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as Char8
+import Data.List (intercalate)
 import qualified Data.ByteString.Lazy as Lazy
 import Data.Text.Encoding (encodeUtf8)
 import Alpaca.Command.Assets (AssetClass, AssetStatus, assetClassParameter, assetStatusParameter)
 import Alpaca.Credentials (Credentials (..))
+import Alpaca.Command.Orders (OrdersCommand (..), orderStatusParameter, orderDirectionParameter)
 import Network.HTTP.Client
   ( HttpException
   , Request (..)
@@ -53,6 +58,10 @@ fetchAssets :: Credentials -> AssetClass -> Maybe AssetStatus -> IO (Either Alpa
 fetchAssets credentials assetClass status =
   fetchPaper (assetsRequest credentials assetClass status)
 
+-- | GET orders is read-only; all query values are typed or CLI-validated.
+fetchOrders :: Credentials -> OrdersCommand -> IO (Either AlpacaError ByteString)
+fetchOrders credentials = fetchPaper . ordersRequest credentials
+
 fetchPaper :: Request -> IO (Either AlpacaError ByteString)
 fetchPaper request = do
   result <-
@@ -81,6 +90,16 @@ assetsRequest credentials classFilter statusFilter =
         <> maybe [] (\status -> [("status", Just (assetStatusParameter status))]) statusFilter
     )
     (paperRequest credentials "/v2/assets")
+
+ordersRequest :: Credentials -> OrdersCommand -> Request
+ordersRequest credentials options =
+  setQueryString
+    ( [("status", Just (orderStatusParameter (ordersStatus options)))]
+        <> maybe [] (\n -> [("limit", Just (Char8.pack (show n)))]) (ordersLimit options)
+        <> maybe [] (\symbols -> [("symbols", Just (Char8.pack (intercalate "," symbols)))]) (ordersSymbols options)
+        <> [("direction", Just (orderDirectionParameter (ordersDirection options)))]
+    )
+    (paperRequest credentials "/v2/orders")
 
 paperRequest :: Credentials -> String -> Request
 paperRequest credentials endpoint =

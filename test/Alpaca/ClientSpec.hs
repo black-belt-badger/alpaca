@@ -6,12 +6,14 @@ import Alpaca.Client
   ( AlpacaError (..)
   , accountRequest
   , assetsRequest
+  , ordersRequest
   , positionsRequest
   , interpretPaperResponse
   , alpacaErrorMessage
   , interpretAccountResponse
   )
 import Alpaca.Command.Assets (AssetClass (..), AssetStatus (..))
+import Alpaca.Command.Orders (OrderDirection (..), OrderStatus (..), OrdersCommand (..))
 import Alpaca.Credentials (Credentials (..))
 import Network.HTTP.Client (Request (..))
 import Test.Hspec (Spec, it, shouldBe)
@@ -59,6 +61,21 @@ spec = do
       `shouldBe` "?asset_class=crypto&status=inactive"
     queryString (assetsRequest credentials Crypto (Just All))
       `shouldBe` "?asset_class=crypto&status=all"
+
+  it "requests open orders from the paper endpoint with safe defaults" $ do
+    let orders = ordersRequest credentials (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing)
+    method orders `shouldBe` "GET"
+    secure orders `shouldBe` True
+    host orders `shouldBe` "paper-api.alpaca.markets"
+    port orders `shouldBe` 443
+    path orders `shouldBe` "/v2/orders"
+    redirectCount orders `shouldBe` 0
+    queryString orders `shouldBe` "?status=open&direction=desc"
+    requestHeaders orders `shouldBe` requestHeaders request
+
+  it "encodes filtered orders, including multiple symbols and sort direction" $ do
+    let orders = ordersRequest credentials (OrdersCommand OrdersAll (Just 500) (Just ["BTCUSD", "AAPL"]) Asc Nothing)
+    queryString orders `shouldBe` "?status=all&limit=500&symbols=BTCUSD%2CAAPL&direction=asc"
 
   it "returns the complete positions JSON body on HTTP 200" $
     interpretPaperResponse 200 "[]"

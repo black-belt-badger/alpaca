@@ -2,6 +2,7 @@ module Alpaca.Command.ParserSpec (spec) where
 
 import Alpaca.Command.Account (AccountCommand (..))
 import Alpaca.Command.Assets (AssetClass (..), AssetStatus (..), AssetsCommand (..))
+import Alpaca.Command.Orders (OrderDirection (..), OrderStatus (..), OrdersCommand (..))
 import Alpaca.Command.Positions (PositionsCommand (..))
 import Alpaca.Command (Command (..))
 import Alpaca.Command.Parser (commandParserInfo)
@@ -59,6 +60,35 @@ spec = do
 
   it "rejects unknown assets options" $
     parse ["assets", "--unexpected"] `shouldBe` Nothing
+
+  it "defaults order listing to open, descending, API-default limit" $
+    parse ["orders"] `shouldBe` Just (Orders (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing))
+
+  it "parses all order filters and original JSON output" $
+    parse ["orders", "--status", "all", "--limit", "500", "--symbols", "BTCUSD, ETHUSD,AAPL", "--direction", "asc", "--out", "orders.json"]
+      `shouldBe` Just (Orders (OrdersCommand OrdersAll (Just 500) (Just ["BTCUSD", "ETHUSD", "AAPL"]) Asc (Just "orders.json")))
+
+  it "parses closed orders and a smaller limit" $
+    parse ["orders", "--status", "closed", "--limit", "20"]
+      `shouldBe` Just (Orders (OrdersCommand OrdersClosed (Just 20) Nothing Desc Nothing))
+
+  it "rejects unsupported status, direction, or symbols" $ do
+    parse ["orders", "--status", "filled"] `shouldBe` Nothing
+    parse ["orders", "--direction", "up"] `shouldBe` Nothing
+    parse ["orders", "--symbols", "BTC/USD"] `shouldBe` Nothing
+    parse ["orders", "--symbols", "BTCUSD,,ETHUSD"] `shouldBe` Nothing
+
+  it "rejects nonpositive and excessive order limits" $ do
+    parse ["orders", "--limit", "0"] `shouldBe` Nothing
+    parse ["orders", "--limit", "501"] `shouldBe` Nothing
+    parse ["orders", "--limit", "garbage"] `shouldBe` Nothing
+
+  it "rejects missing order option values" $ do
+    mapM_ (\flag -> parse ["orders", flag] `shouldBe` Nothing)
+      ["--limit", "--status", "--symbols", "--direction", "--out"]
+
+  it "rejects an unknown order option" $
+    parse ["orders", "--unexpected"] `shouldBe` Nothing
 
   it "rejects an unknown option" $
     parse ["account", "--unexpected"] `shouldBe` Nothing
