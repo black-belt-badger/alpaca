@@ -1,4 +1,4 @@
-# Changelog for `alpaca`
+# Changelog for `kirke`
 
 All notable changes to this project will be documented here.
 

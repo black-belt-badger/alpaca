@@ -5,7 +5,7 @@
 
 **Kirke** is an open-source, unofficial Haskell command-line application for accessing [Alpaca's Trading API](https://docs.alpaca.markets/). It currently offers **read-only access to a paper trading account**. It is not affiliated with, sponsored by, or endorsed by Alpaca Markets.
 
-The GitHub repository and command-line executable are named **Kirke** (`kirke`); the internal Haskell package remains `alpaca`.
+The GitHub repository, Haskell package, and command-line executable are named **Kirke** (`kirke`). Its provider-specific Haskell modules intentionally remain under `Alpaca.*`.
 
 The project is early in development. Its first goal is a small, useful, testable CLI; additional commands may follow as separate issues.
 
@@ -57,10 +57,10 @@ The application sends them as HTTP headers over HTTPS to **`https://paper-api.al
 For interactive use, you can source a private credentials file **outside this repository**. On Linux:
 
 ```sh
-install -d -m 700 "$HOME/.config/alpaca"
+install -d -m 700 "$HOME/.config/kirke"
 umask 077
-${EDITOR:-vi} "$HOME/.config/alpaca/credentials"
-chmod 600 "$HOME/.config/alpaca/credentials"
+${EDITOR:-vi} "$HOME/.config/kirke/credentials"
+chmod 600 "$HOME/.config/kirke/credentials"
 ```
 
 Put the following lines in that file, replacing only the obvious placeholders with your **paper** credentials:
@@ -73,7 +73,7 @@ export APCA_API_SECRET_KEY="YOUR_PAPER_SECRET_KEY"
 Load them into your shell before calling the CLI:
 
 ```sh
-source "$HOME/.config/alpaca/credentials"
+source "$HOME/.config/kirke/credentials"
 ```
 
 Only source a credentials file you created and trust. Don't paste real credentials into issues, PRs, screenshots, shell commands saved in history, CI logs, or the repository. You can also provide these environment variables by other secure means; no specific file location is required by the application.
@@ -91,7 +91,7 @@ stack exec -- kirke account
 Illustrative output (account details deliberately omitted):
 
 ```text
-Alpaca paper account
+Kirke — Alpaca paper account
 Account number: [redacted]
 Status: ACTIVE
 Currency: USD
@@ -118,7 +118,7 @@ Files in `output/` are ignored by Git. Do not publish them.
 
 ## Integration test (maintainers)
 
-`scripts/it.sh` performs live requests against the **paper** API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/alpaca/credentials`, installs the local CLI using Stack, writes files under the ignored `output/` directory, checks JSON fields using `jq`, and verifies private file permissions using GNU `stat`.
+`scripts/it.sh` performs live requests against the **paper** API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials`, installs the local CLI using Stack, writes files under the ignored `output/` directory, checks JSON fields using `jq`, and verifies private file permissions using GNU `stat`.
 
 On a trusted Linux machine with paper credentials, `jq`, and Stack's executable directory on `PATH`:
 

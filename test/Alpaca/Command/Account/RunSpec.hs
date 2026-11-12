@@ -17,7 +17,7 @@ spec :: Spec
 spec = do
   it "renders the account as a readable summary" $ do
     let summary = renderAccountSummary exampleAccount
-    summary `shouldSatisfy` Text.isPrefixOf "Alpaca paper account\n"
+    summary `shouldSatisfy` Text.isPrefixOf "Kirke — Alpaca paper account\n"
     summary `shouldSatisfy` Text.isInfixOf "Account number: PAPER-001\n"
     summary `shouldSatisfy` Text.isInfixOf "Cash: 1234.567890123456\n"
     summary `shouldSatisfy` Text.isInfixOf "Trading blocked: no\n"
@@ -36,7 +36,7 @@ spec = do
 
   it "writes complete JSON with owner-only permissions, even when replacing a public file" $ do
     directory <- getTemporaryDirectory
-    (path, handle) <- openBinaryTempFile directory "alpaca-account-test-"
+    (path, handle) <- openBinaryTempFile directory "kirke-account-test-"
     hClose handle
     let json = "{\"status\":\"ACTIVE\",\"extra\":123}"
     ( do

@@ -8,7 +8,7 @@ mkdir -p output
 chmod 700 output
 
 # Load local paper-trading credentials without placing them in the repository.
-source "${XDG_CONFIG_HOME:-$HOME/.config}/alpaca/credentials"
+source "${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials"
 
 stack install
 
@@ -18,9 +18,9 @@ kirke account > ./output/account-summary.txt
 kirke account --out ./output/account.json
 
 test -s ./output/account-summary.txt
-grep -q '^Alpaca paper account$' ./output/account-summary.txt
+grep -q '^Kirke — Alpaca paper account$' ./output/account-summary.txt
 test -s ./output/account.json
 jq -e '.id and .status and .cash and .equity and .buying_power' ./output/account.json > /dev/null
 test "$(stat -c '%a' ./output/account.json)" = 600
 
-echo "Alpaca paper API integration checks passed"
+echo "Kirke: Alpaca paper API integration checks passed"

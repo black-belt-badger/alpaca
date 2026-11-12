@@ -1,4 +1,4 @@
-name:                alpaca
+name:                kirke
 version:             0.1.0.0
 github:              "black-belt-badger/kirke"
 license:             BSD-3-Clause
@@ -58,10 +58,10 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - alpaca
+    - kirke
 
 tests:
-  alpaca-test:
+  kirke-test:
     main:                Spec.hs
     source-dirs:         test
     build-tools:
@@ -71,6 +71,6 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - alpaca
+    - kirke
     - "hspec >= 2.11 && < 2.12"
     - "unix >= 2.8 && < 2.9"
