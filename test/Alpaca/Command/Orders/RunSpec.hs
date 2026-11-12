@@ -2,7 +2,7 @@
 
 module Alpaca.Command.Orders.RunSpec (spec) where
 
-import Alpaca.Command.Orders.Run (renderOrdersSummary)
+import Alpaca.Command.Orders.Run (renderOrderSummary, renderOrdersSummary)
 import Alpaca.Domain.Order (Order (..))
 import qualified Data.Text as Text
 import Test.Hspec (Spec, it, shouldBe, shouldSatisfy)
@@ -11,6 +11,13 @@ spec :: Spec
 spec = do
   it "renders an empty order history clearly" $
     renderOrdersSummary [] `shouldBe` "Kirke — Alpaca paper orders\nNo matching orders.\n"
+
+  it "renders a single order using the same details as the listing" $ do
+    let summary = renderOrderSummary crypto
+    summary `shouldSatisfy` Text.isPrefixOf "Kirke — Alpaca paper order\n"
+    summary `shouldSatisfy` Text.isInfixOf "BTCUSD (crypto, buy market, filled)\n"
+    summary `shouldSatisfy` Text.isInfixOf "  ID: id-1\n"
+    summary `shouldSatisfy` Text.isInfixOf "  Quantity: 0.00000000123456789\n"
 
   it "shows order details and exact decimals" $ do
     let summary = renderOrdersSummary [crypto]

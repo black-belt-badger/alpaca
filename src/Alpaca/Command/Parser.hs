@@ -8,10 +8,12 @@ import Alpaca.Command.Assets
   , parseAssetStatus
   )
 import Alpaca.Command (Command (..))
+import Alpaca.Command.Order (OrderCommand (..), OrderGetCommand (..), parseOrderId)
 import Alpaca.Command.Orders (OrderDirection (Desc), OrderStatus (OrdersOpen), OrdersCommand (..), parseOrderStatus, parseOrderDirection, parseOrderLimit, parseOrderSymbols)
 import Alpaca.Command.Positions (PositionsCommand (..))
 import Options.Applicative
   ( Parser
+  , argument
   , ParserInfo
   , command
   , fullDesc
@@ -27,6 +29,7 @@ import Options.Applicative
   , value
   , progDesc
   , strOption
+  , switch
   , (<**>)
   )
 
@@ -51,6 +54,9 @@ commandParser =
         <> command "orders"
           (info (Orders <$> ordersParser)
             (progDesc "List and filter Alpaca paper orders (read-only)"))
+        <> command "order"
+          (info (Order <$> orderParser)
+            (progDesc "Inspect an individual Alpaca paper order"))
     )
 
 accountParser :: Parser AccountCommand
@@ -75,6 +81,22 @@ assetsParser =
               <> help "Filter by active, inactive, or all (default: no filter)"
           )
       )
+    <*> outputParser
+
+orderParser :: Parser OrderCommand
+orderParser =
+  hsubparser
+    (command "get"
+      (info (GetOrder <$> orderGetParser)
+        (progDesc "Fetch a single Alpaca paper order by UUID")))
+
+orderGetParser :: Parser OrderGetCommand
+orderGetParser =
+  OrderGetCommand
+    <$> argument (eitherReader parseOrderId)
+      (metavar "ORDER_ID" <> help "Alpaca server order UUID")
+    <*> switch
+      (long "nested" <> help "Roll up multi-leg orders under the parent order (API query nested=true)")
     <*> outputParser
 
 ordersParser :: Parser OrdersCommand
