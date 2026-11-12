@@ -22,6 +22,7 @@ config/local/
 *.key
 
 # Runtime outputs
+/output/
 logs/
 data/
 *.log
