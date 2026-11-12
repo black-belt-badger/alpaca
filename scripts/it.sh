@@ -19,6 +19,9 @@ kirke account --out ./output/account.json
 kirke positions --help > /dev/null
 kirke positions > ./output/positions-summary.txt
 kirke positions --out ./output/positions.json > ./output/positions-written.txt
+kirke assets --help > /dev/null
+kirke assets --status active > ./output/assets-summary.txt
+kirke assets --status active --out ./output/assets.json > ./output/assets-written.txt
 
 test -s ./output/account-summary.txt
 grep -q '^Kirke — Alpaca paper account$' ./output/account-summary.txt
@@ -31,5 +34,11 @@ grep -q '^Kirke — Alpaca paper positions$' ./output/positions-summary.txt
 jq -e 'type == "array"' ./output/positions.json > /dev/null
 test "$(stat -c '%a' ./output/positions.json)" = 600
 test "$(stat -c '%a' ./output/positions-summary.txt)" = 600
+
+test -s ./output/assets-summary.txt
+grep -q '^Kirke — Alpaca paper assets$' ./output/assets-summary.txt
+jq -e 'type == "array" and all(.[]; .class == "crypto" and (.tradable | type == "boolean"))' ./output/assets.json > /dev/null
+test "$(stat -c '%a' ./output/assets.json)" = 600
+test "$(stat -c '%a' ./output/assets-summary.txt)" = 600
 
 echo "Kirke: Alpaca paper API integration checks passed"

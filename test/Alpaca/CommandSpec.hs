@@ -1,6 +1,7 @@
 module Alpaca.CommandSpec (spec) where
 
 import Alpaca.Command.Account (AccountCommand (..))
+import Alpaca.Command.Assets (AssetClass (Crypto), AssetsCommand (..))
 import Alpaca.Command.Positions (PositionsCommand (..))
 import Alpaca.Command (Command (..))
 import Test.Hspec (Spec, it, shouldBe)
@@ -18,6 +19,11 @@ spec = do
   it "distinguishes account and positions" $
     Account (AccountCommand Nothing) == Positions (PositionsCommand Nothing)
       `shouldBe` False
+
+  it "distinguishes assets from account and positions" $ do
+    let assets = Assets (AssetsCommand Crypto Nothing Nothing)
+    assets == Account (AccountCommand Nothing) `shouldBe` False
+    assets == Positions (PositionsCommand Nothing) `shouldBe` False
 
   it "distinguishes different account command options" $
     (Account (AccountCommand Nothing) == Account (AccountCommand (Just "account.json")))

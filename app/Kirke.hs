@@ -2,6 +2,7 @@ module Main (main) where
 
 import Alpaca.Command (Command (..))
 import Alpaca.Command.Account.Run (runAccount)
+import Alpaca.Command.Assets.Run (runAssets)
 import Alpaca.Command.Positions.Run (runPositions)
 import Alpaca.Command.Parser (commandParserInfo)
 import Options.Applicative (execParser)
@@ -12,3 +13,4 @@ main = do
   case command of
     Account options -> runAccount options
     Positions options -> runPositions options
+    Assets options -> runAssets options
