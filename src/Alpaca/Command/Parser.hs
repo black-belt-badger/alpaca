@@ -22,7 +22,7 @@ import Options.Applicative
 commandParserInfo :: ParserInfo Command
 commandParserInfo =
   info (commandParser <**> helper)
-    (fullDesc <> progDesc "Alpaca command-line client")
+    (fullDesc <> progDesc "Kirke: Alpaca paper trading CLI")
 
 commandParser :: Parser Command
 commandParser =

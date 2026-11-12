@@ -12,10 +12,10 @@ source "${XDG_CONFIG_HOME:-$HOME/.config}/alpaca/credentials"
 
 stack install
 
-alpaca --help
-alpaca account --help
-alpaca account > ./output/account-summary.txt
-alpaca account --out ./output/account.json
+kirke --help
+kirke account --help
+kirke account > ./output/account-summary.txt
+kirke account --out ./output/account.json
 
 test -s ./output/account-summary.txt
 grep -q '^Alpaca paper account$' ./output/account-summary.txt

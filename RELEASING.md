@@ -1,6 +1,6 @@
-# Releasing Alpaca (maintainers)
+# Releasing Kirke (maintainers)
 
-Alpaca is an **unofficial** Haskell client and CLI for Alpaca's APIs. The first release covers **paper account access only**.
+Kirke is an **unofficial** Haskell client and CLI for Alpaca's APIs. The Haskell package remains `alpaca`; its executable is named `kirke`. The first release covers **paper account access only**.
 
 ## Versioning
 
@@ -38,13 +38,13 @@ After the release-readiness changes are merged, from a clean working tree:
 git switch main
 git pull --ff-only origin main
 git status --short
-git tag -a v0.1.0.0 -m "Alpaca v0.1.0.0"
+git tag -a v0.1.0.0 -m "Kirke v0.1.0.0"
 git push origin v0.1.0.0
 
 gh release create v0.1.0.0 \
-  --repo black-belt-badger/alpaca \
+  --repo black-belt-badger/kirke \
   --verify-tag \
-  --title "Alpaca v0.1.0.0" \
+  --title "Kirke v0.1.0.0" \
   --generate-notes \
   --prerelease
 ```
