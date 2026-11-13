@@ -10,6 +10,7 @@ module Alpaca.Command.Order.Run
 import Alpaca.Client (AlpacaError (..), alpacaErrorMessage, fetchOrder)
 import Alpaca.Command.Order
   ( OrderCommand (..), OrderGetCommand (..), OrderId, orderIdSegment )
+import Alpaca.Command.Order.Submit.Run (runSubmit)
 import Alpaca.Command.Orders.Run (renderOrderSummary)
 import Alpaca.Credentials (credentialErrorMessage, loadCredentials)
 import Alpaca.Domain.Order (Order (..), decodeOrder)
@@ -22,6 +23,7 @@ import System.Exit (die)
 
 runOrder :: OrderCommand -> IO ()
 runOrder (GetOrder options) = runOrderGet options
+runOrder (SubmitOrder options) = runSubmit options
 
 runOrderGet :: OrderGetCommand -> IO ()
 runOrderGet options = do

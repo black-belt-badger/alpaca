@@ -6,13 +6,14 @@ license-file:        LICENSE
 author:              "Marek Dudek"
 maintainer:          "Marek Dudek"
 copyright:           "2026 Marek Dudek"
-synopsis:            Read-only Haskell CLI for Alpaca paper state and crypto market data
+synopsis:            Haskell CLI for Alpaca paper trading and crypto market data
 category:            Network
 description:         |
   Unofficial Haskell command-line application for Alpaca's paper Trading API.
   Supports reading paper account information, open positions, assets, and
   order history and details, plus historical crypto bars, trades and quotes as
-  readable summaries or JSON/JSONL files. Does not support live trading or order placement.
+  readable summaries or JSON/JSONL files. Crypto paper order submission is
+  opt-in (--confirm), with a credential-free dry run by default. No live trading.
   See https://github.com/black-belt-badger/kirke for documentation.
 
 extra-source-files:
