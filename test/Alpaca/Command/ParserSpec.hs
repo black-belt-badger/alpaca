@@ -20,7 +20,7 @@ import Alpaca.Command.Orders
   ( OrderDirection (..), OrderStatus (..), OrdersCommand (..)
   , OrderSideFilter (..), OrderAssetClass (..)
   )
-import Alpaca.Command.Positions (PositionsCommand (..))
+import Alpaca.Command.Positions (PositionsCommand (..), PositionsFormat (..), parsePositionsFormat)
 import Alpaca.Command (Command (..))
 import Alpaca.Command.Parser (commandParserInfo)
 import Options.Applicative (defaultPrefs, execParserPure, getParseResult)
@@ -52,11 +52,24 @@ spec = do
     parse ["account", "--out"] `shouldBe` Nothing
 
   it "parses positions without output" $
-    parse ["positions"] `shouldBe` Just (Positions (PositionsCommand Nothing))
+    parse ["positions"] `shouldBe` Just (Positions (PositionsCommand Nothing PositionsText False))
 
   it "parses positions with --out" $
     parse ["positions", "--out", "positions.json"]
-      `shouldBe` Just (Positions (PositionsCommand (Just "positions.json")))
+      `shouldBe` Just (Positions (PositionsCommand (Just "positions.json") PositionsText False))
+
+  it "accepts independent positions JSON and check flags" $ do
+    parse ["positions", "--format", "json"]
+      `shouldBe` Just (Positions (PositionsCommand Nothing PositionsJson False))
+    parse ["positions", "--check"]
+      `shouldBe` Just (Positions (PositionsCommand Nothing PositionsText True))
+    parse ["positions", "--format", "json", "--check", "--out", "positions.json"]
+      `shouldBe` Just (Positions (PositionsCommand (Just "positions.json") PositionsJson True))
+
+  it "rejects unsupported or missing positions formats" $ do
+    parse ["positions", "--format", "jsonl"] `shouldBe` Nothing
+    parse ["positions", "--format"] `shouldBe` Nothing
+    parse ["positions", "--check", "true"] `shouldBe` Nothing
 
   it "rejects positions --out without a path" $
     parse ["positions", "--out"] `shouldBe` Nothing

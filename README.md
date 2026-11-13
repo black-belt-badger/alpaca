@@ -13,7 +13,7 @@ The GitHub repository, Haskell package, and command-line executable are named **
 
 The project is early in development. Its first goal is a small, useful, testable CLI; additional commands may follow as separate issues.
 
-**CLI consistency roadmap:** Kirke and Medea share a [CLI/diagnostics contract](docs/cli-contract.md). The account command now supports `--format text|json` (raw JSON on stdout) and `--check` (factual findings on stderr). Other endpoints retain their released behavior; global colors, diagnostic modes and exit-code migration are still proposals.
+**CLI consistency roadmap:** Kirke and Medea share a [CLI/diagnostics contract](docs/cli-contract.md). The account and positions commands now support `--format text|json` (raw JSON on stdout) and `--check` (factual findings on stderr). Other endpoints retain their released behavior; global colors, diagnostic modes and exit-code migration are still proposals.
 
 ## Current functionality
 
@@ -28,6 +28,8 @@ The project is early in development. Its first goal is a small, useful, testable
 | `kirke positions --help` | Show open-position options |
 | `kirke positions` | List current open positions (crypto and equities) |
 | `kirke positions --out PATH` | Save the complete unmodified JSON array of positions |
+| `kirke positions --format json` | Print the original complete positions JSON array to stdout |
+| `kirke positions --check` | Print factual empty-portfolio or unknown-side findings to stderr |
 | `kirke assets` | List available crypto assets (explicit default) |
 | `kirke assets --asset-class us_equity` | List available US equities |
 | `kirke assets --status active --out PATH` | Filter assets and save original JSON privately |

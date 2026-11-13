@@ -38,7 +38,7 @@ import Alpaca.Command.Orders
   , parseOrderStatus, parseOrderDirection, parseOrderLimit, parseOrderSymbols
   , parseOrderSide, parseOrderAssetClasses, parseOrderTimestamp
   )
-import Alpaca.Command.Positions (PositionsCommand (..))
+import Alpaca.Command.Positions (PositionsCommand (..), PositionsFormat (PositionsText), parsePositionsFormat)
 import Options.Applicative
   ( Parser
   , argument
@@ -187,7 +187,13 @@ accountParser =
       (long "check" <> help "Print factual account findings to stderr (does not change exit status)")
 
 positionsParser :: Parser PositionsCommand
-positionsParser = PositionsCommand <$> outputParser
+positionsParser =
+  PositionsCommand
+    <$> outputParser
+    <*> option (eitherReader parsePositionsFormat)
+      (long "format" <> metavar "FORMAT" <> value PositionsText <> help "text (default) or json (original provider response)")
+    <*> switch
+      (long "check" <> help "Print factual positions findings to stderr (does not change exit status)")
 
 assetsParser :: Parser AssetsCommand
 assetsParser =
