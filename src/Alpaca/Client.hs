@@ -15,6 +15,9 @@ module Alpaca.Client
   , fetchOrder
   , fetchSubmitOrder
   , submitOrderRequest
+  , fetchCancelOrder
+  , cancelRequest
+  , interpretCancelResponse
   , orderRequest
   , ordersRequest
   , assetsRequest
@@ -51,7 +54,7 @@ import Alpaca.Command.Crypto.Bars
   )
 import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
 import Alpaca.Command.Crypto.Quotes (CryptoQuotesCommand (..))
-import Alpaca.Command.Order (OrderGetCommand (..), orderIdSegment)
+import Alpaca.Command.Order (OrderGetCommand (..), OrderCancelCommand (..), orderIdSegment)
 import Alpaca.Command.Order.Submit (PreparedOrder, submittedOrderBody)
 import Alpaca.Credentials (Credentials (..))
 import Alpaca.Command.Orders
@@ -77,6 +80,7 @@ import Network.HTTP.Types.Status (statusCode)
 -- | Errors deliberately contain no request headers, credentials, or response body.
 data AlpacaError
   = ConnectionFailed
+  | ConfirmationRequired
   | UnexpectedStatus Int
   deriving (Eq, Show)
 
@@ -104,6 +108,17 @@ fetchOrder credentials = fetchAuthenticated . orderRequest credentials
 fetchSubmitOrder :: Credentials -> PreparedOrder -> IO (Either AlpacaError ByteString)
 fetchSubmitOrder credentials = fetchAuthenticated . submitOrderRequest credentials
 
+-- | Exactly one cancellation attempt, with no automatic retries.
+-- Only HTTP 204 means Alpaca accepted the request; it does not confirm
+-- the order has reached status=canceled.
+fetchCancelOrder :: Credentials -> OrderCancelCommand -> IO (Either AlpacaError ())
+fetchCancelOrder credentials options =
+  case cancelRequest credentials options of
+    Left err -> pure (Left err)
+    Right request -> do
+      result <- fetchRawAuthenticated request
+      pure (result >>= interpretCancelResponse . fst)
+
 -- | All endpoints use the same protected HTTPS transport; the URL specifies
 -- either the trading (paper) API or the read-only market-data API.
 fetchCryptoBarsPage
@@ -125,15 +140,22 @@ fetchCryptoQuotesPage credentials options token =
 
 fetchAuthenticated :: Request -> IO (Either AlpacaError ByteString)
 fetchAuthenticated request = do
+  result <- fetchRawAuthenticated request
+  pure (result >>= uncurry interpretPaperResponse)
+
+-- | Share sanitized HTTP transport, but keep the response status for
+-- endpoints such as DELETE where 204 (not an arbitrary 2xx) is significant.
+fetchRawAuthenticated :: Request -> IO (Either AlpacaError (Int, ByteString))
+fetchRawAuthenticated request = do
   result <-
     try (newManager tlsManagerSettings >>= httpLbs request)
       :: IO (Either HttpException (Response Lazy.ByteString))
   pure $ case result of
     Left _ -> Left ConnectionFailed
-    Right response ->
-      interpretPaperResponse
-        (statusCode (responseStatus response))
-        (Lazy.toStrict (responseBody response))
+    Right response -> Right
+      ( statusCode (responseStatus response)
+      , Lazy.toStrict (responseBody response)
+      )
 
 -- | Construct requests without IO, exposing no credentials in diagnostics.
 accountRequest :: Credentials -> Request
@@ -188,6 +210,15 @@ submitOrderRequest credentials prepared =
           , requestHeaders = ("Content-Type", "application/json") : requestHeaders base
           , requestBody = RequestBodyLBS (submittedOrderBody prepared)
           }
+
+-- | Fixed paper host, validated UUID path, no query or JSON body.
+-- Does not send unless the CLI has explicit --confirm (enforced in runner).
+cancelRequest :: Credentials -> OrderCancelCommand -> Either AlpacaError Request
+cancelRequest credentials options
+  | not (cancelConfirmed options) = Left ConfirmationRequired
+  | otherwise = Right $
+      (paperRequest credentials ("/v2/orders/" <> orderIdSegment (cancelOrderId options)))
+        { method = "DELETE" }
 
 -- | Use allowlisted crypto location and query serialization, never a
 -- user-controlled URL; page tokens are opaque and percent-encoded.
@@ -295,9 +326,17 @@ interpretPaperResponse status body
   | status >= 200 && status < 300 = Right body
   | otherwise = Left (UnexpectedStatus status)
 
+-- | 204 = request accepted, not a completed cancellation. Reject 200,
+-- 202 and other 2xx codes rather than treating them as proof of success.
+interpretCancelResponse :: Int -> Either AlpacaError ()
+interpretCancelResponse 204 = Right ()
+interpretCancelResponse status = Left (UnexpectedStatus status)
+
 alpacaErrorMessage :: AlpacaError -> String
 alpacaErrorMessage ConnectionFailed =
   "Could not connect to Alpaca's paper API. Check your network connection."
+alpacaErrorMessage ConfirmationRequired =
+  "Paper order cancellation requires explicit --confirm."
 alpacaErrorMessage (UnexpectedStatus 401) =
   "Alpaca paper API rejected the credentials (HTTP 401)."
 alpacaErrorMessage (UnexpectedStatus status) =

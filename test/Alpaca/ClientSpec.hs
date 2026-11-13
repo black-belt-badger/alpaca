@@ -11,6 +11,7 @@ import Alpaca.Client
   , cryptoQuotesRequest
   , ordersRequest
   , orderRequest
+  , cancelRequest
   , positionsRequest
   , interpretPaperResponse
   , alpacaErrorMessage
@@ -28,13 +29,13 @@ import Alpaca.Command.Crypto.Bars
   )
 import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
 import Alpaca.Command.Crypto.Quotes (CryptoQuotesCommand (..))
-import Alpaca.Command.Order (OrderGetCommand (..), parseOrderId)
+import Alpaca.Command.Order (OrderGetCommand (..), OrderCancelCommand (..), parseOrderId)
 import Alpaca.Command.Orders
   ( OrderDirection (..), OrderStatus (..), OrdersCommand (..)
   , OrderSideFilter (..), OrderAssetClass (..)
   )
 import Alpaca.Credentials (Credentials (..))
-import Network.HTTP.Client (Request (..))
+import Network.HTTP.Client (Request (..), RequestBody (..))
 import Test.Hspec (Spec, it, shouldBe)
 
 spec :: Spec
@@ -177,6 +178,37 @@ spec = do
     let orderId = either error id (parseOrderId "9275f66a-0a1b-4a22-8c55-167416c7cf14")
         order = orderRequest credentials (OrderGetCommand orderId True Nothing)
     queryString order `shouldBe` "?nested=true"
+
+  it "refuses to construct a DELETE request unless explicitly confirmed" $ do
+    let orderId = either error id (parseOrderId "9275f66a-0a1b-4a22-8c55-167416c7cf14")
+        response = cancelRequest credentials (OrderCancelCommand orderId False)
+    (case response of
+      Left ConfirmationRequired -> True
+      _ -> False) `shouldBe` True
+
+  it "builds a single-bodyless DELETE with validated UUID on the paper host" $ do
+    let uuid = "9275f66a-0a1b-4a22-8c55-167416c7cf14"
+        orderId = either error id (parseOrderId uuid)
+        command = OrderCancelCommand orderId True
+        cancellation = either (error . show) id (cancelRequest credentials command)
+    method cancellation `shouldBe` "DELETE"
+    secure cancellation `shouldBe` True
+    host cancellation `shouldBe` "paper-api.alpaca.markets"
+    port cancellation `shouldBe` 443
+    path cancellation `shouldBe` "/v2/orders/9275f66a-0a1b-4a22-8c55-167416c7cf14"
+    queryString cancellation `shouldBe` ""
+    redirectCount cancellation `shouldBe` 0
+    requestHeaders cancellation `shouldBe` requestHeaders request
+    case requestBody cancellation of
+      RequestBodyLBS body -> body `shouldBe` ""
+      _ -> error "Cancellation must have an empty request body"
+
+  it "keeps an uppercase canonical UUID as one validated path segment" $ do
+    let command = OrderCancelCommand
+          (either error id (parseOrderId "ABCDEF12-0A1B-4A22-8C55-167416C7CF14")) False
+    path (either (error . show) id (cancelRequest credentials
+      (command { cancelConfirmed = True })))
+      `shouldBe` "/v2/orders/ABCDEF12-0A1B-4A22-8C55-167416C7CF14"
 
   it "distinguishes HTTP 404 from 401 without exposing provider body" $ do
     interpretPaperResponse 404 "private provider error" `shouldBe` Left (UnexpectedStatus 404)

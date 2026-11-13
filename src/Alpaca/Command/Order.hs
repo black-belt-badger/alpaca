@@ -4,6 +4,7 @@ module Alpaca.Command.Order
   , orderIdSegment
   , OrderCommand (..)
   , OrderGetCommand (..)
+  , OrderCancelCommand (..)
   ) where
 
 import Alpaca.Command.Order.Submit (SubmitCommand)
@@ -41,7 +42,15 @@ data OrderGetCommand = OrderGetCommand
   }
   deriving (Eq, Show)
 
+-- | No HTTP request is made unless the user explicitly passes --confirm.
+data OrderCancelCommand = OrderCancelCommand
+  { cancelOrderId :: OrderId
+  , cancelConfirmed :: Bool
+  }
+  deriving (Eq, Show)
+
 data OrderCommand
   = GetOrder OrderGetCommand
   | SubmitOrder SubmitCommand
+  | CancelOrder OrderCancelCommand
   deriving (Eq, Show)

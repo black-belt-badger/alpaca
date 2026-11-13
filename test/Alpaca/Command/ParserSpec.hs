@@ -15,7 +15,7 @@ import Alpaca.Command.Crypto.Bars
   )
 import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
 import Alpaca.Command.Crypto.Quotes (CryptoQuotesCommand (..))
-import Alpaca.Command.Order (OrderCommand (..), OrderGetCommand (..), parseOrderId)
+import Alpaca.Command.Order (OrderCommand (..), OrderGetCommand (..), OrderCancelCommand (..), parseOrderId)
 import Alpaca.Command.Orders
   ( OrderDirection (..), OrderStatus (..), OrdersCommand (..)
   , OrderSideFilter (..), OrderAssetClass (..)
@@ -202,6 +202,30 @@ spec = do
     parse ["order", "get", uuid, "--unknown"] `shouldBe` Nothing
     parse ["order", "unknown", uuid] `shouldBe` Nothing
     parse ["order"] `shouldBe` Nothing
+
+  it "parses paper order cancellation as an unconfirmed dry run by default" $ do
+    let uuid = "9275f66a-0a1b-4a22-8c55-167416c7cf14"
+        orderId = either error id (parseOrderId uuid)
+    parse ["order", "cancel", uuid]
+      `shouldBe` Just (Order (CancelOrder (OrderCancelCommand orderId False)))
+    parse ["order", "cancel", "--confirm", uuid]
+      `shouldBe` Just (Order (CancelOrder (OrderCancelCommand orderId True)))
+    parse ["order", "cancel", uuid, "--confirm"]
+      `shouldBe` Just (Order (CancelOrder (OrderCancelCommand orderId True)))
+
+  it "rejects missing, hostile or malformed cancel UUIDs and unrelated flags" $ do
+    let uuid = "9275f66a-0a1b-4a22-8c55-167416c7cf14"
+    mapM_ (\args -> parse args `shouldBe` Nothing)
+      [ ["order", "cancel"]
+      , ["order", "cancel", ""]
+      , ["order", "cancel", "../positions"]
+      , ["order", "cancel", "not-a-uuid"]
+      , ["order", "cancel", "9275f66a-0a1b-4a22-8c55-167416c7cf14?foo=bar"]
+      , ["order", "cancel", uuid, "--all"]
+      , ["order", "cancel", uuid, "--out", "secret"]
+      , ["order", "cancel", uuid, "--nested"]
+      , ["order", "cancel", uuid, "--dry-run"]
+      ]
 
   it "rejects an unknown order option" $
     parse ["orders", "--unexpected"] `shouldBe` Nothing

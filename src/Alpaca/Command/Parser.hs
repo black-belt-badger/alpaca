@@ -27,7 +27,8 @@ import Alpaca.Command.Assets
   , parseAssetAttributes
   )
 import Alpaca.Command (Command (..))
-import Alpaca.Command.Order (OrderCommand (..), OrderGetCommand (..), parseOrderId)
+import Alpaca.Command.Order
+  ( OrderCommand (..), OrderGetCommand (..), OrderCancelCommand (..), parseOrderId )
 import Alpaca.Command.Order.Submit
   ( SubmitCommand (..), SubmitTimeInForce (SubmitGtc)
   , parseSubmitSymbol, parseSubmitAmount, parseClientOrderId
@@ -214,7 +215,10 @@ orderParser =
         (progDesc "Fetch a single Alpaca paper order by UUID"))
       <> command "submit"
         (info (SubmitOrder <$> orderSubmitParser)
-          (progDesc "Prepare a crypto paper order (dry run unless --confirm)")))
+          (progDesc "Prepare a crypto paper order (dry run unless --confirm)"))
+      <> command "cancel"
+        (info (CancelOrder <$> orderCancelParser)
+          (progDesc "Preview paper order cancellation; --confirm sends DELETE")))
 
 orderSubmitParser :: Parser SubmitCommand
 orderSubmitParser =
@@ -237,6 +241,13 @@ orderSubmitParser =
       (long "client-order-id" <> metavar "ID" <> help "Required stable client identifier; do not reuse for different orders")
     <*> switch (long "confirm" <> help "Actually submit to Alpaca PAPER API; default is offline dry run")
     <*> outputParser
+
+orderCancelParser :: Parser OrderCancelCommand
+orderCancelParser =
+  OrderCancelCommand
+    <$> argument (eitherReader parseOrderId)
+      (metavar "ORDER_ID" <> help "Server-issued UUID of the paper order to cancel")
+    <*> switch (long "confirm" <> help "Actually send one DELETE to the PAPER API; default: offline dry run")
 
 orderGetParser :: Parser OrderGetCommand
 orderGetParser =
