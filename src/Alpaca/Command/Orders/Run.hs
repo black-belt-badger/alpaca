@@ -4,6 +4,7 @@ module Alpaca.Command.Orders.Run
   ( runOrders
   , renderOrdersSummary
   , renderOrderSummary
+  , presentOrders
   ) where
 
 import Alpaca.Client (alpacaErrorMessage, fetchOrders)
@@ -12,6 +13,7 @@ import Alpaca.Credentials (credentialErrorMessage, loadCredentials)
 import Alpaca.Domain.Order (Order (..), OrderDetails (..), decodeOrders, orderSideValue, orderStateValue, orderTypeValue)
 import Alpaca.Output (savePrivateJson)
 import Control.Exception (IOException, displayException, try)
+import Data.ByteString (ByteString)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as TextIO
@@ -23,14 +25,22 @@ runOrders uncheckedOptions = do
   credentials <- loadCredentials >>= either (die . credentialErrorMessage) pure
   response <- fetchOrders credentials options
     >>= either (die . alpacaErrorMessage) pure
-  orders <- either (die . ("Invalid Alpaca orders response: " <>)) pure (decodeOrders response)
-  case ordersOutput options of
-    Nothing -> TextIO.putStr (renderOrdersSummary orders)
-    Just path -> do
-      result <- try (savePrivateJson path response) :: IO (Either IOException ())
-      case result of
-        Left err -> die ("Could not save orders JSON: " <> displayException err)
-        Right () -> putStrLn ("Saved complete orders JSON to " <> path)
+  outcome <- presentOrders (ordersOutput options) response
+  either die TextIO.putStr outcome
+
+-- | Decode the entire order array before displaying or persisting any data.
+-- Keep the provider payload intact for explicit raw JSON exports.
+presentOrders :: Maybe FilePath -> ByteString -> IO (Either String Text)
+presentOrders destination response =
+  case decodeOrders response of
+    Left _ -> pure (Left "Invalid Alpaca orders response.")
+    Right orders -> case destination of
+      Nothing -> pure (Right (renderOrdersSummary orders))
+      Just path -> do
+        result <- try (savePrivateJson path response) :: IO (Either IOException ())
+        pure $ case result of
+          Left err -> Left ("Could not save orders JSON: " <> displayException err)
+          Right () -> Right ("Saved complete orders JSON to " <> Text.pack path <> "\n")
 
 renderOrdersSummary :: [Order] -> Text
 renderOrdersSummary orders =
