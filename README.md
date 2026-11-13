@@ -291,7 +291,7 @@ This is **not** run by public CI; CI uses only offline tests.
 
 ## Development and roadmap
 
-Work is tracked in [GitHub Issues](https://github.com/black-belt-badger/kirke/issues) and pull requests. The first release milestone is [v0.1.0.0](https://github.com/black-belt-badger/kirke/milestone/1); versions follow the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
+Work is tracked in [GitHub Issues](https://github.com/black-belt-badger/kirke/issues) and pull requests. The initial [v0.1.0.0 release](https://github.com/black-belt-badger/kirke/releases/tag/v0.1.0.0) was paper-account-only; subsequent releases add read-only trading state and market data. Versions follow the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
 A separate, publicly released Rust implementation called [**Medea**](https://github.com/black-belt-badger/medea) follows the same outward behavior using idiomatic Rust code and independent versioning. Endpoint parity is implemented incrementally: Haskell first, then Rust.
 

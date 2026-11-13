@@ -7,6 +7,10 @@ Release headings are dated only when a release is published.
 
 ## Unreleased
 
+_No changes yet._
+
+## 0.2.0.0 — 2026-11-13
+
 ### Added
 - `kirke crypto trades` fetches bounded historical crypto executions with typed symbol, location, timestamp, limit, sort and token-based pagination filters, sharing the market-data request builder with bars.
 - `Integer` trade IDs, exact-decimal `Scientific` prices and sizes, nanosecond timestamp strings and optional taker side; streaming JSONL/JSON page-envelope exports use owner-only atomic files and roll back on later-page errors.
