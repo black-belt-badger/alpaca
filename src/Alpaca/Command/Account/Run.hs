@@ -10,24 +10,23 @@ module Alpaca.Command.Account.Run
   ) where
 
 import Alpaca.Client (alpacaErrorMessage, fetchAccount)
+import Alpaca.Cli.Output (renderCliFindings, writeCliBytes)
 import Alpaca.Command.Account (AccountCommand (..), AccountFormat (..))
 import Alpaca.Credentials (credentialErrorMessage, loadCredentials)
-import Alpaca.Diagnostics (Finding (..), severityValue)
+import Alpaca.Diagnostics (Finding)
 import Alpaca.Diagnostics.Account (accountFindings)
 import Alpaca.Domain.Account (Account (..), decodeAccount, statusValue)
 import Alpaca.Output (savePrivateJson)
-import Control.Exception (IOException, catch, displayException, try)
+import Control.Exception (IOException, displayException, try)
 import Control.Monad (when)
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as Bytes
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Encoding
 import qualified Data.Text.IO as TextIO
 import System.Exit (die)
-import System.IO (Handle, hFlush, stderr, stdout)
-import System.IO.Error (isResourceVanishedError)
+import System.IO (Handle, stderr, stdout)
 
 runAccount :: AccountCommand -> IO ()
 runAccount options = do
@@ -56,23 +55,12 @@ prepareAccountOutput options response = do
       findings = if accountCheck options then accountFindings account else []
   Right (payload, findings)
 
+-- | Compatibility aliases; common Unix handling now serves account and positions.
 renderAccountFindings :: [Finding] -> Text
-renderAccountFindings = Text.concat . map render
-  where
-    render finding =
-      Text.toUpper (severityValue (findingSeverity finding))
-        <> " " <> findingCode finding <> " (" <> findingPath finding <> "): "
-        <> findingMessage finding <> "\n"
+renderAccountFindings = renderCliFindings
 
--- | Treat an intentionally closed stdout pipe as success, not a stack trace.
--- Other IO errors must still fail with a sanitized diagnostic.
 writeAccountBytes :: Handle -> ByteString -> IO Bool
-writeAccountBytes handle bytes =
-  (Bytes.hPut handle bytes >> hFlush handle >> pure True) `catch` handleWriteError
-  where
-    handleWriteError err
-      | isResourceVanishedError err = pure False
-      | otherwise = die "Could not write account output."
+writeAccountBytes = writeCliBytes
 
 orDie :: (e -> String) -> Either e a -> IO a
 orDie render = either (die . render) pure

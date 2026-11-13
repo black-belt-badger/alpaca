@@ -4,7 +4,7 @@ import Alpaca.Command.Account (AccountCommand (..), AccountFormat (..))
 import Alpaca.Command.Assets (AssetClass (Crypto), AssetsCommand (..))
 import Alpaca.Command.Order (OrderCommand (..), OrderGetCommand (..), parseOrderId)
 import Alpaca.Command.Orders (OrderDirection (Desc), OrderStatus (OrdersOpen), OrdersCommand (..))
-import Alpaca.Command.Positions (PositionsCommand (..))
+import Alpaca.Command.Positions (PositionsCommand (..), PositionsFormat (..), parsePositionsFormat)
 import Alpaca.Command (Command (..))
 import Test.Hspec (Spec, it, shouldBe)
 
@@ -15,23 +15,23 @@ spec = do
       `shouldBe` Account (AccountCommand (Just "account.json") AccountText False)
 
   it "wraps positions command options" $
-    Positions (PositionsCommand Nothing)
-      `shouldBe` Positions (PositionsCommand Nothing)
+    Positions (PositionsCommand Nothing PositionsText False)
+      `shouldBe` Positions (PositionsCommand Nothing PositionsText False)
 
   it "distinguishes account and positions" $
-    Account (AccountCommand Nothing AccountText False) == Positions (PositionsCommand Nothing)
+    Account (AccountCommand Nothing AccountText False) == Positions (PositionsCommand Nothing PositionsText False)
       `shouldBe` False
 
   it "distinguishes assets from account and positions" $ do
     let assets = Assets (AssetsCommand Crypto Nothing Nothing Nothing Nothing)
     assets == Account (AccountCommand Nothing AccountText False) `shouldBe` False
-    assets == Positions (PositionsCommand Nothing) `shouldBe` False
+    assets == Positions (PositionsCommand Nothing PositionsText False) `shouldBe` False
 
   it "distinguishes order listing from other commands" $ do
     let orders = Orders (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing Nothing Nothing False Nothing Nothing Nothing Nothing)
     orders == Account (AccountCommand Nothing AccountText False) `shouldBe` False
     orders == Assets (AssetsCommand Crypto Nothing Nothing Nothing Nothing) `shouldBe` False
-    orders == Positions (PositionsCommand Nothing) `shouldBe` False
+    orders == Positions (PositionsCommand Nothing PositionsText False) `shouldBe` False
 
   it "distinguishes single order get from listing" $ do
     let orderId = either error id (parseOrderId "9275f66a-0a1b-4a22-8c55-167416c7cf14")

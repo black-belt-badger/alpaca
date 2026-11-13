@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Alpaca.Command.Positions.AcceptanceSpec (spec) where
+module Alpaca.Command.Positions.AcceptanceSpec (spec, positionBytes) where
 
 import Alpaca.Command.Positions.Run (presentPositions)
 import Control.Exception (finally)
