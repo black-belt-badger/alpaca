@@ -13,6 +13,8 @@ The GitHub repository, Haskell package, and command-line executable are named **
 
 The project is early in development. Its first goal is a small, useful, testable CLI; additional commands may follow as separate issues.
 
+**CLI consistency roadmap:** Kirke and Medea share a [proposed CLI/diagnostics contract](docs/cli-contract.md) for Unix pipes, output formats, secure exports and factual findings. This is a staged design: the proposed flags and exit codes are **not yet implemented**, and current commands retain their released behavior. The first implementation slice adds pure account findings without printing or acting on them.
+
 ## Current functionality
 
 | Command | Behavior |
