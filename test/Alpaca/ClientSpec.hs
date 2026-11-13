@@ -15,7 +15,8 @@ import Alpaca.Client
   , alpacaErrorMessage
   , interpretAccountResponse
   )
-import Alpaca.Command.Assets (AssetClass (..), AssetStatus (..))
+import Alpaca.Command.Assets
+  ( AssetClass (..), AssetStatus (..), AssetExchange (..), AssetAttribute (..), AssetsCommand (..))
 import Alpaca.Command.Crypto.Bars
   ( BarsFormat (BarsJson)
   , BarsSort (BarsAsc, BarsDesc)
@@ -56,7 +57,7 @@ spec = do
     requestHeaders positions `shouldBe` requestHeaders request
 
   it "requests crypto assets explicitly, never implicit equities" $ do
-    let assets = assetsRequest credentials Crypto Nothing
+    let assets = assetsRequest credentials (AssetsCommand Crypto Nothing Nothing Nothing Nothing)
     method assets `shouldBe` "GET"
     secure assets `shouldBe` True
     host assets `shouldBe` "paper-api.alpaca.markets"
@@ -67,14 +68,36 @@ spec = do
     redirectCount assets `shouldBe` 0
 
   it "constructs filtered equity asset requests" $ do
-    let assets = assetsRequest credentials UsEquity (Just Active)
+    let assets = assetsRequest credentials (AssetsCommand UsEquity (Just Active) Nothing Nothing Nothing)
     queryString assets `shouldBe` "?asset_class=us_equity&status=active"
 
   it "supports inactive and all status filters" $ do
-    queryString (assetsRequest credentials Crypto (Just Inactive))
+    queryString (assetsRequest credentials (AssetsCommand Crypto (Just Inactive) Nothing Nothing Nothing))
       `shouldBe` "?asset_class=crypto&status=inactive"
-    queryString (assetsRequest credentials Crypto (Just All))
+    queryString (assetsRequest credentials (AssetsCommand Crypto (Just All) Nothing Nothing Nothing))
       `shouldBe` "?asset_class=crypto&status=all"
+
+  it "encodes exchange and attribute CSV filters for equities" $ do
+    let options = AssetsCommand UsEquity (Just Active)
+          (Just [Nasdaq, Nyse]) (Just [HasOptions, IpoAttribute]) Nothing
+        assets = assetsRequest credentials options
+    method assets `shouldBe` "GET"
+    secure assets `shouldBe` True
+    host assets `shouldBe` "paper-api.alpaca.markets"
+    path assets `shouldBe` "/v2/assets"
+    queryString assets `shouldBe`
+      "?asset_class=us_equity&status=active&exchange=NASDAQ%2CNYSE&attributes=has_options%2Cipo"
+    redirectCount assets `shouldBe` 0
+    requestHeaders assets `shouldBe` requestHeaders request
+
+  it "sends INDEX only with explicit us_index and no other filters by default" $ do
+    let assets = assetsRequest credentials (AssetsCommand UsIndex Nothing (Just [Index]) Nothing Nothing)
+    queryString assets `shouldBe` "?asset_class=us_index&exchange=INDEX"
+
+  it "accepts single attribute queries while omitting absent filters" $ do
+    let assets = assetsRequest credentials
+          (AssetsCommand Crypto Nothing Nothing (Just [OvernightTradable]) Nothing)
+    queryString assets `shouldBe` "?asset_class=crypto&attributes=overnight_tradable"
 
   it "requests open orders from the paper endpoint with safe defaults" $ do
     let orders = ordersRequest credentials (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing)

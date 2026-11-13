@@ -6,9 +6,9 @@ module Alpaca.Command.Assets.Run
   ) where
 
 import Alpaca.Client (alpacaErrorMessage, fetchAssets)
-import Alpaca.Command.Assets (AssetsCommand (..))
+import Alpaca.Command.Assets (AssetsCommand (..), validateAssetsCommand)
 import Alpaca.Credentials (credentialErrorMessage, loadCredentials)
-import Alpaca.Domain.Asset (Asset (..), decodeAssets)
+import Alpaca.Domain.Asset (Asset (..), assetKindValue, assetStateValue, decodeAssets)
 import Alpaca.Output (savePrivateJson)
 import Control.Exception (IOException, displayException, try)
 import Data.Text (Text)
@@ -17,9 +17,10 @@ import qualified Data.Text.IO as TextIO
 import System.Exit (die)
 
 runAssets :: AssetsCommand -> IO ()
-runAssets options = do
+runAssets uncheckedOptions = do
+  options <- either die pure (validateAssetsCommand uncheckedOptions)
   credentials <- loadCredentials >>= either (die . credentialErrorMessage) pure
-  response <- fetchAssets credentials (assetsClass options) (assetsStatus options)
+  response <- fetchAssets credentials options
     >>= either (die . alpacaErrorMessage) pure
   assets <- either (die . ("Invalid Alpaca assets response: " <>)) pure (decodeAssets response)
   case assetsOutput options of
@@ -42,10 +43,10 @@ renderAssetsSummary assets =
 
 renderAsset :: Asset -> [Text]
 renderAsset asset =
-  [ assetSymbol asset <> " (" <> assetClass asset <> ", " <> assetStatus asset <> ")"
-  , "  Name: " <> maybe "not provided" id (assetName asset)
+  [ assetSymbol asset <> " (" <> assetKindValue (assetClass asset) <> ", " <> assetStateValue (assetStatus asset) <> ")"
+  , "  Name: " <> assetName asset
   , "  Tradable: " <> boolText (assetTradable asset)
-  , "  Fractionable: " <> maybe "not provided" boolText (assetFractionable asset)
+  , "  Fractionable: " <> boolText (assetFractionable asset)
   ]
   where
     boolText True = "yes"

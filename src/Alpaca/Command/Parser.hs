@@ -22,6 +22,8 @@ import Alpaca.Command.Assets
   , AssetsCommand (..)
   , parseAssetClass
   , parseAssetStatus
+  , parseAssetExchanges
+  , parseAssetAttributes
   )
 import Alpaca.Command (Command (..))
 import Alpaca.Command.Order (OrderCommand (..), OrderGetCommand (..), parseOrderId)
@@ -151,7 +153,7 @@ assetsParser =
       ( long "asset-class"
           <> metavar "CLASS"
           <> value Crypto
-          <> help "Asset class: crypto (default), us_equity"
+          <> help "Asset class: crypto (CLI default), us_equity, us_option, crypto_perp, treasury, corporate, global_equity, us_index, us_equity_chain, ipo"
       )
     <*> optional
       ( option (eitherReader parseAssetStatus)
@@ -160,6 +162,12 @@ assetsParser =
               <> help "Filter by active, inactive, or all (default: no filter)"
           )
       )
+    <*> optional
+      (option (eitherReader parseAssetExchanges)
+        (long "exchange" <> metavar "EXCHANGES" <> help "Comma-separated equity exchanges, or INDEX for us_index"))
+    <*> optional
+      (option (eitherReader parseAssetAttributes)
+        (long "attributes" <> metavar "ATTRIBUTES" <> help "Comma-separated asset attributes (OR matching)"))
     <*> outputParser
 
 orderParser :: Parser OrderCommand

@@ -3,7 +3,8 @@
 module Alpaca.Command.ParserSpec (spec) where
 
 import Alpaca.Command.Account (AccountCommand (..))
-import Alpaca.Command.Assets (AssetClass (..), AssetStatus (..), AssetsCommand (..))
+import Alpaca.Command.Assets
+  ( AssetClass (..), AssetStatus (..), AssetExchange (..), AssetAttribute (..), AssetsCommand (..))
 import Alpaca.Command.Crypto.Bars
   ( BarsFormat (..)
   , BarsSort (..)
@@ -47,19 +48,46 @@ spec = do
     parse ["positions", "--unexpected"] `shouldBe` Nothing
 
   it "defaults assets to the crypto class with no status filter" $
-    parse ["assets"] `shouldBe` Just (Assets (AssetsCommand Crypto Nothing Nothing))
+    parse ["assets"] `shouldBe` Just (Assets (AssetsCommand Crypto Nothing Nothing Nothing Nothing))
 
   it "parses all supported asset filters and JSON output" $
     parse ["assets", "--asset-class", "us_equity", "--status", "active", "--out", "assets.json"]
-      `shouldBe` Just (Assets (AssetsCommand UsEquity (Just Active) (Just "assets.json")))
+      `shouldBe` Just (Assets (AssetsCommand UsEquity (Just Active) Nothing Nothing (Just "assets.json")))
 
   it "parses an explicit crypto class and all statuses" $
     parse ["assets", "--asset-class", "crypto", "--status", "all"]
-      `shouldBe` Just (Assets (AssetsCommand Crypto (Just All) Nothing))
+      `shouldBe` Just (Assets (AssetsCommand Crypto (Just All) Nothing Nothing Nothing))
 
   it "parses an inactive status" $
     parse ["assets", "--status", "inactive"]
-      `shouldBe` Just (Assets (AssetsCommand Crypto (Just Inactive) Nothing))
+      `shouldBe` Just (Assets (AssetsCommand Crypto (Just Inactive) Nothing Nothing Nothing))
+
+  it "parses all asset filters together without dropping query parameters" $
+    parse ["assets", "--asset-class", "us_equity", "--status", "active",
+           "--exchange", "NASDAQ,NYSE", "--attributes", "has_options,ipo",
+           "--out", "assets.json"]
+      `shouldBe` Just (Assets (AssetsCommand UsEquity (Just Active)
+        (Just [Nasdaq, Nyse]) (Just [HasOptions, IpoAttribute]) (Just "assets.json")))
+
+  it "accepts the INDEX exchange for the us_index class" $
+    parse ["assets", "--asset-class", "us_index", "--exchange", "INDEX"]
+      `shouldBe` Just (Assets (AssetsCommand UsIndex Nothing (Just [Index]) Nothing Nothing))
+
+  it "accepts every newly exposed asset class" $ do
+    mapM_ (\(argument, expected) ->
+      parse ["assets", "--asset-class", argument]
+        `shouldBe` Just (Assets (AssetsCommand expected Nothing Nothing Nothing Nothing)))
+      [ ("us_option", UsOption), ("crypto_perp", CryptoPerp)
+      , ("treasury", Treasury), ("corporate", Corporate)
+      , ("global_equity", GlobalEquity), ("us_equity_chain", UsEquityChain)
+      , ("ipo", Ipo)
+      ]
+
+  it "rejects malformed or unknown assets exchanges and attributes" $ do
+    parse ["assets", "--exchange", "NYSE,"] `shouldBe` Nothing
+    parse ["assets", "--exchange", "CRYPTO"] `shouldBe` Nothing
+    parse ["assets", "--attributes", "ipo,ipo"] `shouldBe` Nothing
+    parse ["assets", "--attributes", "unknown"] `shouldBe` Nothing
 
   it "rejects an unsupported asset class or status" $ do
     parse ["assets", "--asset-class", "options"] `shouldBe` Nothing
@@ -69,6 +97,8 @@ spec = do
     parse ["assets", "--out"] `shouldBe` Nothing
     parse ["assets", "--status"] `shouldBe` Nothing
     parse ["assets", "--asset-class"] `shouldBe` Nothing
+    parse ["assets", "--exchange"] `shouldBe` Nothing
+    parse ["assets", "--attributes"] `shouldBe` Nothing
 
   it "rejects unknown assets options" $
     parse ["assets", "--unexpected"] `shouldBe` Nothing
