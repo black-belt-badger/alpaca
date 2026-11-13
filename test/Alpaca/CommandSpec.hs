@@ -23,14 +23,14 @@ spec = do
       `shouldBe` False
 
   it "distinguishes assets from account and positions" $ do
-    let assets = Assets (AssetsCommand Crypto Nothing Nothing)
+    let assets = Assets (AssetsCommand Crypto Nothing Nothing Nothing Nothing)
     assets == Account (AccountCommand Nothing) `shouldBe` False
     assets == Positions (PositionsCommand Nothing) `shouldBe` False
 
   it "distinguishes order listing from other commands" $ do
     let orders = Orders (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing)
     orders == Account (AccountCommand Nothing) `shouldBe` False
-    orders == Assets (AssetsCommand Crypto Nothing Nothing) `shouldBe` False
+    orders == Assets (AssetsCommand Crypto Nothing Nothing Nothing Nothing) `shouldBe` False
     orders == Positions (PositionsCommand Nothing) `shouldBe` False
 
   it "distinguishes single order get from listing" $ do

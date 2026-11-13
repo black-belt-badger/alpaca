@@ -27,6 +27,9 @@ The project is early in development. Its first goal is a small, useful, testable
 | `kirke assets` | List available crypto assets (explicit default) |
 | `kirke assets --asset-class us_equity` | List available US equities |
 | `kirke assets --status active --out PATH` | Filter assets and save original JSON privately |
+| `kirke assets --asset-class us_equity --exchange NASDAQ,NYSE` | Filter US equities by one or more exchanges |
+| `kirke assets --asset-class us_equity --attributes has_options,ipo` | Match assets having either requested attribute |
+| `kirke assets --asset-class us_index --exchange INDEX` | Filter index symbols using the INDEX exchange |
 | `kirke orders` | List open paper orders, most recent first |
 | `kirke orders --status all --limit 10` | Inspect up to 10 recent orders |
 | `kirke orders --symbols BTCUSD,ETHUSD --direction asc` | Filter orders by symbol and submission order |
@@ -177,7 +180,19 @@ stack exec -- kirke assets --asset-class crypto --status inactive
 stack exec -- kirke assets --status all
 ```
 
-`--asset-class` accepts `crypto` (default) or `us_equity`. `--status` accepts `active`, `inactive`, or `all`; if omitted, no status filter is sent. Assets include their symbol, name when available, class, status, tradability, and fractional-trading eligibility where provided. Missing optional fields are displayed as `not provided`. Empty results show `No matching assets.`
+`--asset-class` supports every documented Alpaca class: `us_equity`, `us_option`, `crypto` (Kirke default), `crypto_perp`, `treasury`, `corporate`, `global_equity`, `us_index`, `us_equity_chain`, and `ipo`. `--status` accepts `active`, `inactive`, or `all`; if omitted, no status filter is sent.
+
+Additional filters:
+
+```sh
+stack exec -- kirke assets --asset-class us_equity --exchange NASDAQ,NYSE --attributes has_options,overnight_tradable
+stack exec -- kirke assets --asset-class us_index --exchange INDEX
+stack exec -- kirke assets --asset-class us_equity --attributes ptp_no_exception,ipo --out output/assets.json
+```
+
+`--exchange` accepts comma-separated equity exchanges (AMEX, ARCA, BATS, NYSE, NASDAQ, NYSEARCA, OTC, TXSE) or `INDEX` **only for us_index**. Exchange filtering is rejected for crypto and other non-equity/index classes, rather than silently ignored. `--attributes` supports the eight documented attributes: `ptp_no_exception`, `ptp_with_exception`, `ipo`, `has_options`, `options_late_close`, `fractional_eh_enabled`, `overnight_tradable`, `overnight_halted`. Multiple attributes have **OR** semantics on Alpaca (any match). Empty, duplicated or unknown CSV entries are rejected.
+
+The typed asset response covers all 19 documented fields, including venue, class/status/attribute enums, borrow status, marginability, shortability, fractional eligibility, exact decimal strings and nullable metadata. The human-readable summary remains concise and shows the required symbol, name, class, status, tradability, and fractionability. Empty results show `No matching assets.` See [assets API coverage](docs/api/assets.md).
 
 Save the original, complete JSON array instead of a summary:
 

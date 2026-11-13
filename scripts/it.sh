@@ -22,6 +22,9 @@ kirke positions --out ./output/positions.json > ./output/positions-written.txt
 kirke assets --help > /dev/null
 kirke assets --status active > ./output/assets-summary.txt
 kirke assets --status active --out ./output/assets.json > ./output/assets-written.txt
+# Exercise M3 exchange + attribute filters together (read-only paper API).
+kirke assets --asset-class us_equity --exchange NASDAQ --attributes has_options \
+  --out ./output/assets-nasdaq-options.json > ./output/assets-nasdaq-options-written.txt
 kirke orders --help > /dev/null
 kirke orders --status all --limit 10 > ./output/orders-summary.txt
 kirke orders --status all --limit 10 --out ./output/orders.json > ./output/orders-written.txt
@@ -43,6 +46,8 @@ grep -q '^Kirke — Alpaca paper assets$' ./output/assets-summary.txt
 jq -e 'type == "array" and all(.[]; .class == "crypto" and (.tradable | type == "boolean"))' ./output/assets.json > /dev/null
 test "$(stat -c '%a' ./output/assets.json)" = 600
 test "$(stat -c '%a' ./output/assets-summary.txt)" = 600
+jq -e 'type == "array" and all(.[]; .class == "us_equity" and .exchange == "NASDAQ" and ((.attributes // []) | index("has_options") != null))' ./output/assets-nasdaq-options.json > /dev/null
+test "$(stat -c '%a' ./output/assets-nasdaq-options.json)" = 600
 
 test -s ./output/orders-summary.txt
 grep -q '^Kirke — Alpaca paper orders$' ./output/orders-summary.txt

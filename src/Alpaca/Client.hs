@@ -28,7 +28,13 @@ import Data.List (intercalate)
 import qualified Data.Text as Text
 import qualified Data.ByteString.Lazy as Lazy
 import Data.Text.Encoding (encodeUtf8)
-import Alpaca.Command.Assets (AssetClass, AssetStatus, assetClassParameter, assetStatusParameter)
+import Alpaca.Command.Assets
+  ( AssetsCommand (..)
+  , assetClassParameter
+  , assetStatusParameter
+  , assetExchangeParameter
+  , assetAttributeParameter
+  )
 import Alpaca.Command.Crypto.Bars
   ( BarsInstant
   , BarsSort
@@ -73,9 +79,8 @@ fetchPositions :: Credentials -> IO (Either AlpacaError ByteString)
 fetchPositions = fetchAuthenticated . positionsRequest
 
 -- | Asset class is explicitly supplied, since Alpaca defaults to equities.
-fetchAssets :: Credentials -> AssetClass -> Maybe AssetStatus -> IO (Either AlpacaError ByteString)
-fetchAssets credentials assetClass status =
-  fetchAuthenticated (assetsRequest credentials assetClass status)
+fetchAssets :: Credentials -> AssetsCommand -> IO (Either AlpacaError ByteString)
+fetchAssets credentials = fetchAuthenticated . assetsRequest credentials
 
 -- | GET orders is read-only; all query values are typed or CLI-validated.
 fetchOrders :: Credentials -> OrdersCommand -> IO (Either AlpacaError ByteString)
@@ -119,11 +124,13 @@ positionsRequest credentials = paperRequest credentials "/v2/positions"
 
 -- | Construct the query with HTTP-client's encoding, never by interpolating
 -- untrusted query text into a URL. The filters are typed allowed values.
-assetsRequest :: Credentials -> AssetClass -> Maybe AssetStatus -> Request
-assetsRequest credentials classFilter statusFilter =
+assetsRequest :: Credentials -> AssetsCommand -> Request
+assetsRequest credentials options =
   setQueryString
-    ( [("asset_class", Just (assetClassParameter classFilter))]
-        <> maybe [] (\status -> [("status", Just (assetStatusParameter status))]) statusFilter
+    ( [("asset_class", Just (assetClassParameter (assetsClass options)))]
+        <> maybe [] (\status -> [("status", Just (assetStatusParameter status))]) (assetsStatus options)
+        <> maybe [] (\exchanges -> [("exchange", Just (Char8.intercalate "," (map assetExchangeParameter exchanges)))]) (assetsExchanges options)
+        <> maybe [] (\attributes -> [("attributes", Just (Char8.intercalate "," (map assetAttributeParameter attributes)))]) (assetsAttributes options)
     )
     (paperRequest credentials "/v2/assets")
 
