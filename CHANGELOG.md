@@ -7,6 +7,9 @@ Release headings are dated only when a release is published.
 
 ## Unreleased
 
+### Added
+- `kirke crypto quotes` reads bounded historical crypto best bid/ask data from Alpaca, with validated symbols/location/time, exact `Scientific` prices and sizes, nanosecond timestamp strings, safe continuation pagination, and JSON/JSONL streaming with private atomic output. Matches Medea's read-only historical quotes contract, with synthetic offline and bounded live integration tests.
+
 ### Changed
 - Model both `account.status` and optional `account.crypto_status` as a shared, forward-compatible `AccountStatus` enum; unknown future strings round-trip without changing CLI summaries or raw account JSON exports.
 - Decode every documented `GET /v2/account` response field with strict wire types, including both options-level integer enums. Only `id` and `status` are required; null/absent optional values render as `not provided` without losing the complete original JSON for `--out`.

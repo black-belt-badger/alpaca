@@ -111,4 +111,23 @@ test "$(stat -c '%a' ./output/crypto-trades.jsonl)" = 600
 test -s ./output/crypto-trades.jsonl
 jq -e -c '.symbol and .i and .t and (.p | type == "number") and (.s | type == "number")' ./output/crypto-trades.jsonl > /dev/null
 
+# Historical best bid/ask quotes: two symbols, at most two pages of two records.
+quotes_flags=(--symbols BTC/USD,ETH/USD \
+  --start 2026-10-02T00:00:00Z --end 2026-10-02T03:00:00Z \
+  --limit 2 --max-pages 2)
+kirke crypto quotes --help > /dev/null
+kirke crypto quotes "${quotes_flags[@]}" > ./output/crypto-quotes-summary.txt
+kirke crypto quotes "${quotes_flags[@]}" --out ./output/crypto-quotes.json > ./output/crypto-quotes-written.txt
+kirke crypto quotes "${quotes_flags[@]}" --format jsonl --out ./output/crypto-quotes.jsonl > ./output/crypto-quotes-jsonl-written.txt
+grep -q '^Kirke — Alpaca historical crypto quotes$' ./output/crypto-quotes-summary.txt
+jq -e '(.pages | type == "array" and length >= 1 and length <= 2) and
+  (.next_page_token == null or (.next_page_token | type == "string")) and
+  all(.pages[]; (.quotes | type == "object"))' ./output/crypto-quotes.json > /dev/null
+test "$(stat -c '%a' ./output/crypto-quotes.json)" = 600
+test "$(stat -c '%a' ./output/crypto-quotes.jsonl)" = 600
+test -s ./output/crypto-quotes.jsonl
+jq -e -c '.symbol and (.ap | type == "number") and (.as | type == "number") and
+  (.bp | type == "number") and (.bs | type == "number") and
+  (.t | type == "string")' ./output/crypto-quotes.jsonl > /dev/null
+
 echo "Kirke: Alpaca paper and crypto market-data API integration checks passed"

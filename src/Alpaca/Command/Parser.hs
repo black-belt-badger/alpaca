@@ -2,6 +2,7 @@ module Alpaca.Command.Parser (commandParserInfo) where
 
 import Alpaca.Command.Account (AccountCommand (..))
 import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
+import Alpaca.Command.Crypto.Quotes (CryptoQuotesCommand (..))
 import Alpaca.Command.Crypto.Bars
   ( BarsFormat (BarsJson)
   , BarsSort (BarsAsc)
@@ -92,7 +93,10 @@ cryptoParser =
         (progDesc "Fetch bounded historical crypto OHLCV bars"))
       <> command "trades"
         (info (CryptoTrades <$> cryptoTradesParser)
-          (progDesc "Fetch bounded historical crypto trades")))
+          (progDesc "Fetch bounded historical crypto trades"))
+      <> command "quotes"
+        (info (CryptoQuotes <$> cryptoQuotesParser)
+          (progDesc "Fetch bounded historical crypto best bid/ask quotes")))
 
 cryptoBarsParser :: Parser CryptoBarsCommand
 cryptoBarsParser =
@@ -143,6 +147,30 @@ cryptoTradesParser =
       (long "format" <> metavar "FORMAT" <> value BarsJson <> help "json (default) or jsonl")
     <*> optional
       (strOption (long "out" <> metavar "PATH" <> help "Stream JSON page envelopes or JSONL trades into a private file"))
+
+cryptoQuotesParser :: Parser CryptoQuotesCommand
+cryptoQuotesParser =
+  CryptoQuotesCommand
+    <$> option (eitherReader parseSymbols)
+      (long "symbols" <> metavar "PAIRS" <> help "Required: BTC/USD,ETH/USD,SOL/USD")
+    <*> option (eitherReader parseLocation)
+      (long "location" <> metavar "LOCATION" <> value Us <> help "us (default), us-1, us-2, eu-1, bs-1")
+    <*> optional (option (eitherReader parseInstant)
+      (long "start" <> metavar "RFC3339" <> help "Inclusive start date or timestamp"))
+    <*> optional (option (eitherReader parseInstant)
+      (long "end" <> metavar "RFC3339" <> help "Inclusive end date or timestamp"))
+    <*> option (eitherReader parsePageLimit)
+      (long "limit" <> metavar "N" <> value 1000 <> help "Quotes per page, 1..10000 (total across symbols)")
+    <*> option (eitherReader parseSort)
+      (long "sort" <> metavar "SORT" <> value BarsAsc <> help "asc (default) or desc")
+    <*> option (eitherReader parseMaxPages)
+      (long "max-pages" <> metavar "N" <> value 1 <> help "Maximum pages, 1..20 (default: 1)")
+    <*> optional (option (eitherReader parsePageToken)
+      (long "page-token" <> metavar "TOKEN" <> help "Resume from previous API pagination token"))
+    <*> option (eitherReader parseBarsFormat)
+      (long "format" <> metavar "FORMAT" <> value BarsJson <> help "json (default) or jsonl")
+    <*> optional
+      (strOption (long "out" <> metavar "PATH" <> help "Stream JSON page envelopes or JSONL quotes privately"))
 
 accountParser :: Parser AccountCommand
 accountParser = AccountCommand <$> outputParser

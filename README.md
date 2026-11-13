@@ -42,10 +42,13 @@ The project is early in development. Its first goal is a small, useful, testable
 | `kirke crypto trades --symbols BTC/USD,ETH/USD` | Fetch a bounded page of individual historical executions |
 | `kirke crypto trades --symbols BTC/USD --max-pages 2 --out PATH` | Save complete trade pages and continuation token privately |
 | `kirke crypto trades --symbols BTC/USD --format jsonl --out PATH` | Stream symbolized trade records to an atomic private JSONL file |
+| `kirke crypto quotes --symbols BTC/USD,ETH/USD` | Fetch bounded historical crypto bid/ask quotes |
+| `kirke crypto quotes --symbols BTC/USD --max-pages 2 --out PATH` | Export complete quote pages and continuation token |
+| `kirke crypto quotes --symbols BTC/USD --format jsonl --out PATH` | Stream exact-decimal symbolized quotes privately |
 
 The summary includes account number, status, currency, cash, equity, buying power, trading-blocked flag, and crypto status. Both statuses are typed account-status enums (not boolean ACTIVE/INACTIVE flags); they retain new Alpaca values safely. The account response decoder now covers all currently documented fields, including typed options-level enums and nullable/optional values. When a summary field is unavailable it displays `not provided`. See the [M3 account coverage notes](docs/api/account.md).
 
-**Not implemented:** live-account access, order submission/cancellation, historical quotes, live streaming, and shell completion. Listing positions does **not** close them or place orders. No trading decisions are made or orders placed.
+**Not implemented:** live-account access, order submission/cancellation, live streaming, and shell completion. Listing positions does **not** close them or place orders. No trading decisions are made or orders placed.
 
 ## Requirements
 
@@ -304,9 +307,35 @@ Prices and sizes use Haskell `Scientific` and trade IDs `Integer`, preserving nu
 
 This is a bounded API client, not Ariadne/Metis backfill orchestration or trade execution. **No order is submitted or modified.**
 
+## Historical crypto quotes (Alpaca market-data API)
+
+Best bid/ask observations come from **`GET https://data.alpaca.markets/v1beta3/crypto/{loc}/quotes`**. Like historical trades, quote events have **no timeframe**, are read-only, and use the authenticated crypto market-data host.
+
+```sh
+stack exec -- kirke crypto quotes \
+  --symbols BTC/USD,ETH/USD --start 2026-10-02T00:00:00Z \
+  --end 2026-10-03T00:00:00Z
+
+stack exec -- kirke crypto quotes \
+  --symbols BTC/USD,SOL/USD --limit 500 --max-pages 3 \
+  --out output/quotes.json
+
+stack exec -- kirke crypto quotes \
+  --symbols BTC/USD --limit 1000 --max-pages 2 --format jsonl \
+  --out output/btc-quotes.jsonl
+```
+
+**Filters:** required `--symbols` (1–30 pairs), `--location us|us-1|us-2|eu-1|bs-1` (default `us`), inclusive `--start`/`--end` as a date or RFC3339 timestamp, `--limit 1..10000` (default 1000 **total across symbols per page**), `--sort asc|desc` (default `asc`), `--max-pages 1..20` (default 1), and optional `--page-token`. A short page is not the end of history when Alpaca supplies another token.
+
+**Output:** With no `--out`, the default shows a per-symbol quote and page summary. Private JSON export contains `{"pages":[API_PAGE_1,...],"next_page_token":...}`, preserving known and unknown provider properties. JSONL contains one record per quote: `symbol`, `ap` (ask price), `as` (ask size), `bp` (bid price), `bs` (bid size) and `t` (exact timestamp text). Both sizes are measured in the **base asset**; no lot-size multiplier is applied. JSONL does not retain continuation tokens or unknown extension fields.
+
+Bid/ask prices and sizes are `Scientific` exact decimal values, without binary floating-point rounding; numeric notation may be normalized during JSON serialization. Timestamp strings retain fractional seconds, including nanoseconds. Quotes are streamed **one page at a time**; failures on subsequent pages do not replace an existing private `--out` file. Files are written with owner-only permissions, normally `0600`. Streaming JSONL to stdout cannot be rolled back; use `--out` for atomic exports.
+
+See the [Historical quotes API coverage matrix](docs/api/crypto-quotes.md). This is bounded retrieval, not full Ariadne/Metis backfill planning.
+
 ## Integration test (maintainers)
 
-`scripts/cd.sh` performs live requests against the paper Trading API and read-only crypto Market Data API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials`, installs the local CLI using Stack, writes account, positions, assets, orders, and small crypto-bars and crypto-trades samples under the ignored `output/` directory, checks JSON structures using `jq`, and verifies private file permissions using GNU `stat`.
+`scripts/cd.sh` performs live requests against the paper Trading API and read-only crypto Market Data API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials`, installs the local CLI using Stack, writes account, positions, assets, orders, and small crypto-bars, crypto-trades and crypto-quotes samples under the ignored `output/` directory, checks JSON structures using `jq`, and verifies private file permissions using GNU `stat`.
 
 On a trusted Linux machine with paper credentials, `jq`, and Stack's executable directory on `PATH`:
 

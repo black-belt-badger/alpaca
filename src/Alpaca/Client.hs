@@ -7,7 +7,9 @@ module Alpaca.Client
   , fetchAssets
   , fetchCryptoBarsPage
   , fetchCryptoTradesPage
+  , fetchCryptoQuotesPage
   , cryptoTradesRequest
+  , cryptoQuotesRequest
   , cryptoBarsRequest
   , fetchOrders
   , fetchOrder
@@ -46,6 +48,7 @@ import Alpaca.Command.Crypto.Bars
   , timeframeParameter
   )
 import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
+import Alpaca.Command.Crypto.Quotes (CryptoQuotesCommand (..))
 import Alpaca.Command.Order (OrderGetCommand (..), orderIdSegment)
 import Alpaca.Credentials (Credentials (..))
 import Alpaca.Command.Orders
@@ -105,6 +108,12 @@ fetchCryptoTradesPage
   :: Credentials -> CryptoTradesCommand -> Maybe Text.Text -> IO (Either AlpacaError ByteString)
 fetchCryptoTradesPage credentials options token =
   fetchAuthenticated (cryptoTradesRequest credentials options token)
+
+-- | Read-only best bid/ask quotes from the same authenticated market API.
+fetchCryptoQuotesPage
+  :: Credentials -> CryptoQuotesCommand -> Maybe Text.Text -> IO (Either AlpacaError ByteString)
+fetchCryptoQuotesPage credentials options token =
+  fetchAuthenticated (cryptoQuotesRequest credentials options token)
 
 fetchAuthenticated :: Request -> IO (Either AlpacaError ByteString)
 fetchAuthenticated request = do
@@ -203,6 +212,20 @@ cryptoTradesRequest credentials options token =
     , queryEnd = cryptoTradesEnd options
     , queryLimit = cryptoTradesLimit options
     , querySort = cryptoTradesSort options
+    , queryToken = token
+    }
+
+cryptoQuotesRequest :: Credentials -> CryptoQuotesCommand -> Maybe Text.Text -> Request
+cryptoQuotesRequest credentials options token =
+  cryptoDataRequest credentials CryptoDataQuery
+    { queryEndpoint = "quotes"
+    , querySymbols = cryptoQuotesSymbols options
+    , queryLocation = cryptoQuotesLocation options
+    , queryTimeframe = Nothing
+    , queryStart = cryptoQuotesStart options
+    , queryEnd = cryptoQuotesEnd options
+    , queryLimit = cryptoQuotesLimit options
+    , querySort = cryptoQuotesSort options
     , queryToken = token
     }
 
