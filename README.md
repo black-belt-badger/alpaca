@@ -294,12 +294,12 @@ This is a bounded API client, not Ariadne/Metis backfill orchestration or trade 
 
 ## Integration test (maintainers)
 
-`scripts/it.sh` performs live requests against the paper Trading API and read-only crypto Market Data API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials`, installs the local CLI using Stack, writes account, positions, assets, orders, and small crypto-bars and crypto-trades samples under the ignored `output/` directory, checks JSON structures using `jq`, and verifies private file permissions using GNU `stat`.
+`scripts/cd.sh` performs live requests against the paper Trading API and read-only crypto Market Data API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials`, installs the local CLI using Stack, writes account, positions, assets, orders, and small crypto-bars and crypto-trades samples under the ignored `output/` directory, checks JSON structures using `jq`, and verifies private file permissions using GNU `stat`.
 
 On a trusted Linux machine with paper credentials, `jq`, and Stack's executable directory on `PATH`:
 
 ```sh
-./scripts/it.sh
+./scripts/cd.sh
 ```
 
 This is **not** run by public CI; CI uses only offline tests.

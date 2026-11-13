@@ -18,7 +18,7 @@ Kirke is an **unofficial Haskell CLI** for read-only paper Trading API state and
    ```sh
    stack build
    stack test
-   ./scripts/it.sh
+   ./scripts/cd.sh
    ```
 
    The integration script exercises paper account, positions, assets, orders, and bounded crypto bars/trades. It sources local secrets; **never publish credentials or account/data responses**.

@@ -71,7 +71,7 @@ The current OpenAPI `required` list has **only `id` and `status`**; notably, `ac
 
 - No CLI flag or default-format changes. `kirke account` prints a concise summary, displaying `not provided` for omitted/null optional fields. `kirke account --out PATH` stores the original complete JSON privately.
 - Offline tests cover a synthetic full-schema response, all 34 types, extremely long decimal strings, flags, present/missing/null/zero, option enums and future integer variants, invalid property types, unknown properties, unexpected account statuses, empty/malformed bodies, and existing safe HTTP behavior.
-- An opt-in `./scripts/it.sh` covers the actual paper API with private credentials; nothing secret or account-specific belongs in CI or fixtures.
+- An opt-in `./scripts/cd.sh` covers the actual paper API with private credentials; nothing secret or account-specific belongs in CI or fixtures.
 
 **Follow-up outside this phase:** formal UUID and date-time string *format validation*, response provenance/field presence as a general abstraction, optional business diagnostics, status coloring, Unix stream conventions, output-mode flags, shell completion and cross-language parity. See [cross-cutting Kirke #44](https://github.com/black-belt-badger/kirke/issues/44) and [Medea #44](https://github.com/black-belt-badger/medea/issues/44).
 
