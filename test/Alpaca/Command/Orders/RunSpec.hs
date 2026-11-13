@@ -3,7 +3,7 @@
 module Alpaca.Command.Orders.RunSpec (spec) where
 
 import Alpaca.Command.Orders.Run (renderOrderSummary, renderOrdersSummary)
-import Alpaca.Domain.Order (Order (..))
+import Alpaca.Domain.Order (Order (..), decodeOrder)
 import qualified Data.Text as Text
 import Test.Hspec (Spec, it, shouldBe, shouldSatisfy)
 
@@ -35,20 +35,6 @@ spec = do
 
 crypto :: Order
 crypto =
-  Order
-    "id-1"
-    "cid-1"
-    "BTCUSD"
-    (Just "crypto")
-    "buy"
-    "market"
-    "filled"
-    (Just "0.00000000123456789")
-    Nothing
-    "0.00000000123456789"
-    (Just "90000.123456789")
-    Nothing
-    Nothing
-    "2026-11-12T22:00:00Z"
-    (Just "2026-11-12T22:00:00Z")
-    (Just "2026-11-12T22:00:01Z")
+  case decodeOrder "{\"id\":\"id-1\",\"client_order_id\":\"cid-1\",\"symbol\":\"BTCUSD\",\"asset_class\":\"crypto\",\"side\":\"buy\",\"type\":\"market\",\"status\":\"filled\",\"qty\":\"0.00000000123456789\",\"filled_qty\":\"0.00000000123456789\",\"filled_avg_price\":\"90000.123456789\",\"created_at\":\"2026-11-12T22:00:00Z\",\"submitted_at\":\"2026-11-12T22:00:00Z\",\"filled_at\":\"2026-11-12T22:00:01Z\"}" of
+    Right value -> value
+    Left failure -> error ("Invalid synthetic order fixture: " <> failure)

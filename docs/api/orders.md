@@ -1,6 +1,6 @@
 # M3 — GET /v2/orders request-parameter fidelity (Kirke)
 
-Scope: [Kirke M3 issue #35](https://github.com/black-belt-badger/kirke/issues/35) and paired [Medea #36](https://github.com/black-belt-badger/medea/issues/36). This is **request phase 1**, not final endpoint acceptance.
+Scope: [Kirke M3 issue #35](https://github.com/black-belt-badger/kirke/issues/35) and paired [Medea #36](https://github.com/black-belt-badger/medea/issues/36). This page records **request phase 1** (merged in PR #51). Complete response parsing is covered separately in [response phase 2](orders-response.md); shared CLI conventions remain in issue #44.
 
 Reference reviewed on 2026-11-13: [Alpaca GET /v2/orders](https://docs.alpaca.markets/us/reference/getallorders-1) and [published machine-readable OpenAPI](https://docs.alpaca.markets/us/reference/getallorders-1.md).
 
@@ -68,6 +68,6 @@ The UUID in this example is illustrative, not an account-specific order. Use `--
 
 ## Deliberately deferred to response phase 2
 
-The published `Order` schema has **37 properties**, plus `OrderLeg` with **35 properties**; the existing human summary models only a subset. The next focused Kirke PR will audit those complete response fields, optional/null behavior, status/type/time-in-force and position-intent enums, and nested leg representation, then bring Medea to parity. This parent M3 issue stays open.
+Response phase 2 now decodes the published common and leg-specific order fields in a complete `Order`/`OrderDetails` model, with nullable values, exact decimal strings, typed open status/type/time-in-force/position-intent enums and nested legs. See the [response-field matrix](orders-response.md). Medea's implementation and the later triparity review remain separate.
 
 Shared CLI diagnostics, color, Unix stream formatting and shell completion remain in [Kirke #44](https://github.com/black-belt-badger/kirke/issues/44) / [Medea #44](https://github.com/black-belt-badger/medea/issues/44). Do not introduce that design during request-fidelity work.
