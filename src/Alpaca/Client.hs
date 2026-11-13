@@ -48,7 +48,10 @@ import Alpaca.Command.Crypto.Bars
 import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
 import Alpaca.Command.Order (OrderGetCommand (..), orderIdSegment)
 import Alpaca.Credentials (Credentials (..))
-import Alpaca.Command.Orders (OrdersCommand (..), orderStatusParameter, orderDirectionParameter)
+import Alpaca.Command.Orders
+  ( OrdersCommand (..), orderStatusParameter, orderDirectionParameter
+  , orderSideParameter, orderAssetClassParameter
+  )
 import Network.HTTP.Client
   ( HttpException
   , Request (..)
@@ -141,6 +144,13 @@ ordersRequest credentials options =
         <> maybe [] (\n -> [("limit", Just (Char8.pack (show n)))]) (ordersLimit options)
         <> maybe [] (\symbols -> [("symbols", Just (Char8.pack (intercalate "," symbols)))]) (ordersSymbols options)
         <> [("direction", Just (orderDirectionParameter (ordersDirection options)))]
+        <> maybe [] (\v -> [("after", Just (encodeUtf8 (instantParameter v)))]) (ordersAfter options)
+        <> maybe [] (\v -> [("until", Just (encodeUtf8 (instantParameter v)))]) (ordersUntil options)
+        <> (if ordersNested options then [("nested", Just "true")] else [])
+        <> maybe [] (\v -> [("side", Just (orderSideParameter v))]) (ordersSide options)
+        <> maybe [] (\classes -> [("asset_class", Just (Char8.intercalate "," (map orderAssetClassParameter classes)))]) (ordersAssetClasses options)
+        <> maybe [] (\ident -> [("before_order_id", Just (Char8.pack (orderIdSegment ident)))]) (ordersBeforeOrderId options)
+        <> maybe [] (\ident -> [("after_order_id", Just (Char8.pack (orderIdSegment ident)))]) (ordersAfterOrderId options)
     )
     (paperRequest credentials "/v2/orders")
 

@@ -217,7 +217,19 @@ stack exec -- kirke orders --status closed --direction asc
 stack exec -- kirke orders --symbols BTCUSD,ETHUSD,AAPL --limit 50
 ```
 
-Options: `--status open|closed|all`, `--limit 1..500`, `--direction asc|desc`, and `--symbols` with comma-separated API symbols such as `BTCUSD` (not `BTC/USD`). The filters are sent to Alpaca; Kirke does not paginate automatically. It prints `No matching orders.` for an empty result. Prices and quantities remain exact decimal **strings**, including optional/notional orders; null fields appear as `not provided`.
+Options: `--status open|closed|all` (default open), `--limit 1..500` (provider default 50), `--direction asc|desc` (default desc), and `--symbols` with comma-separated trading symbols such as `BTCUSD` (not `BTC/USD`). Kirke also supports all documented order filters: `--after` and `--until` (exclusive submission-time RFC3339 bounds), `--nested`, `--side buy|sell`, `--asset-class` with a comma-separated list of the ten documented asset classes (or `all`), and exclusive order pagination with `--before-order-id UUID` or `--after-order-id UUID`. The two UUID anchors cannot be combined or mixed with timestamp bounds. Invalid combinations are rejected before credentials are loaded.
+
+Examples:
+
+```sh
+stack exec -- kirke orders --status all --limit 10 --nested --side buy --asset-class crypto
+stack exec -- kirke orders --status all --asset-class crypto,us_equity \
+  --after 2026-11-01T00:00:00Z --until 2026-11-14T00:00:00Z
+stack exec -- kirke orders --status all --limit 10 \
+  --before-order-id 9275f66a-0a1b-4a22-8c55-167416c7cf14
+```
+
+The UUID is an example; use an existing order's server-issued `id`, not `client_order_id`. This endpoint does **not** have a page token, and Kirke does not automatically paginate. It prints `No matching orders.` for an empty result. Prices and quantities remain exact decimal **strings**, including optional/notional orders; null fields appear as `not provided`. See the [M3 orders request coverage notes](docs/api/orders.md).
 
 Save the complete original provider response instead of displaying a summary:
 
@@ -225,7 +237,7 @@ Save the complete original provider response instead of displaying a summary:
 stack exec -- kirke orders --status all --limit 10 --out output/orders.json
 ```
 
-JSON files are private and atomically replaced (typically mode `0600`). Both summaries and order JSON can reveal personal portfolio activity. **No order is placed, modified or canceled.** For historical queries beyond the latest 500, a future ticket will provide explicit pagination. Reference: [Alpaca GET /v2/orders](https://docs.alpaca.markets/us/reference/getallorders-1).
+JSON files are private and atomically replaced (typically mode `0600`). Both summaries and order JSON can reveal personal portfolio activity. **No order is placed, modified or canceled.** The cursor flags provide explicit page-by-page navigation; automatic iteration over multiple pages remains a possible later improvement. Reference: [Alpaca GET /v2/orders](https://docs.alpaca.markets/us/reference/getallorders-1).
 
 ## Order details: fetch by server UUID
 
