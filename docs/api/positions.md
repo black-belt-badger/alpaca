@@ -95,3 +95,34 @@ The concise summary remains backward-compatible for valid position arrays:
 - Opt-in `./scripts/cd.sh` validates actual paper positions and private JSON output without putting account details or credentials in CI.
 
 **Intentionally deferred:** external CLI ergonomics, portfolio aggregation, FX normalization, additional date/UUID format validation, color/diagnostics and Unix pipeline behavior. Those common enhancements belong to [Kirke #44](https://github.com/black-belt-badger/kirke/issues/44) and [Medea #44](https://github.com/black-belt-badger/medea/issues/44), after the M3 API audit. Parent positions issue #34 stays open pending final review and Rust parity.
+
+## Paired Kirke/Medea M3 command acceptance
+
+Both clients intentionally expose the same observable contract while keeping
+idiomatic Haskell and Rust implementations. This phase **does not** add
+unapproved UX switches; common formatting, diagnostics and Unix pipeline
+behavior remain owned by issue #44.
+
+| Example or condition | Both commands must do |
+| --- | --- |
+| `positions --help` | Show `--out PATH`, with no network or credentials |
+| `positions` | Authenticate to the paper API and request all **open** positions via `GET /v2/positions`, with no query or request body |
+| `positions --symbol BTCUSD`, `--limit 10` or `--asset-class crypto` | Reject unsupported arguments before credentials/network |
+| Empty array `[]` | Succeed with `No open positions.` summary; alternatively preserve `[]` exactly in `--out` |
+| Valid positions, including future enum values | Print the exact decimal strings for quantity, market value, current price and unrealized P/L; omit private asset IDs and USD subfields from the short summary |
+| `positions --out existing-dir/positions.json` | Validate the *entire* array, then atomically save the original response bytes with owner-only permissions (0600 on Unix); print path-only success notice |
+| Malformed JSON, null response, incomplete record or invalid field type | Fail with sanitized error and no private data on stdout; an existing output file remains unchanged |
+| HTTP auth/permission error, rate limit, temporary upstream failure | Nonzero exit and sanitized transport/HTTP diagnostic; do not print credentials or provider body |
+| Unwritable destination | Fail without printing success or provider data; do not partially replace a prior export |
+
+**Triparity fixture:** The new offline acceptance tests in both repositories
+use the same synthetic BTCUSD position (exact 24-digit fractional quantity,
+negative unrealized P/L, present zero strings, explicit null optional field,
+unknown nested provider property and private asset ID). Tests exercise the
+actual command presentation/export boundary and Unix owner-only replacement
+without using credentials. They also verify that failed schema validation
+does not clobber an existing export.
+
+This closes the endpoint-specific acceptance work; later output changes must
+be designed together in [Kirke #44](https://github.com/black-belt-badger/kirke/issues/44)
+and [Medea #44](https://github.com/black-belt-badger/medea/issues/44).
