@@ -3,7 +3,7 @@
 module Alpaca.Command.Account.RunSpec (spec) where
 
 import Alpaca.Command.Account.Run (renderAccountSummary, saveAccountJson)
-import Alpaca.Domain.Account (Account (..))
+import Alpaca.Domain.Account (Account (..), AccountStatus (..))
 import Control.Exception (finally)
 import Data.Bits ((.&.))
 import qualified Data.ByteString as ByteString
@@ -30,6 +30,14 @@ spec = do
     summary `shouldSatisfy` Text.isInfixOf "Trading blocked: yes\n"
     summary `shouldSatisfy` Text.isInfixOf "Crypto status: not provided\n"
 
+  it "renders different typed statuses, including future values, unchanged" $ do
+    let summary = renderAccountSummary (exampleAccount
+          { accountStatus = StatusAccountUpdated
+          , accountCryptoStatus = Just (StatusOther "NEW_CRYPTO_STATUS")
+          })
+    summary `shouldSatisfy` Text.isInfixOf "Status: ACCOUNT_UPDATED\n"
+    summary `shouldSatisfy` Text.isInfixOf "Crypto status: NEW_CRYPTO_STATUS\n"
+
   it "does not include the internal account UUID" $
     renderAccountSummary exampleAccount
       `shouldSatisfy` (not . Text.isInfixOf "private-id")
@@ -54,11 +62,11 @@ exampleAccount =
   Account
     { accountId = "private-id"
     , accountNumber = "PAPER-001"
-    , accountStatus = "ACTIVE"
+    , accountStatus = StatusActive
     , accountCurrency = "USD"
     , accountCash = "1234.567890123456"
     , accountEquity = "4000.00"
     , accountBuyingPower = "2500.00"
     , accountTradingBlocked = False
-    , accountCryptoStatus = Just "ACTIVE"
+    , accountCryptoStatus = Just StatusActive
     }

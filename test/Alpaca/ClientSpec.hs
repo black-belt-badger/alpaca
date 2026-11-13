@@ -42,6 +42,7 @@ spec = do
     host request `shouldBe` "paper-api.alpaca.markets"
     port request `shouldBe` 443
     path request `shouldBe` "/v2/account"
+    queryString request `shouldBe` "" -- GET /v2/account has no query parameters
     redirectCount request `shouldBe` 0
 
   it "uses the same paper-only settings to request positions" $ do

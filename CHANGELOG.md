@@ -7,7 +7,8 @@ Release headings are dated only when a release is published.
 
 ## Unreleased
 
-_No changes yet._
+### Changed
+- Model both `account.status` and optional `account.crypto_status` as a shared, forward-compatible `AccountStatus` enum; unknown future strings round-trip without changing CLI summaries or raw account JSON exports.
 
 ## 0.2.0.0 — 2026-11-13
 

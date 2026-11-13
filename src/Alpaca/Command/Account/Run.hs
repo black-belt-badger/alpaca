@@ -9,11 +9,10 @@ module Alpaca.Command.Account.Run
 import Alpaca.Client (alpacaErrorMessage, fetchAccount)
 import Alpaca.Command.Account (AccountCommand (..))
 import Alpaca.Credentials (credentialErrorMessage, loadCredentials)
-import Alpaca.Domain.Account (Account (..), decodeAccount)
+import Alpaca.Domain.Account (Account (..), decodeAccount, statusValue)
 import Alpaca.Output (savePrivateJson)
 import Control.Exception (IOException, displayException, try)
 import Data.ByteString (ByteString)
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as TextIO
@@ -40,13 +39,13 @@ renderAccountSummary account =
   Text.unlines
     [ "Kirke — Alpaca paper account"
     , "Account number: " <> accountNumber account
-    , "Status: " <> accountStatus account
+    , "Status: " <> statusValue (accountStatus account)
     , "Currency: " <> accountCurrency account
     , "Cash: " <> accountCash account
     , "Equity: " <> accountEquity account
     , "Buying power: " <> accountBuyingPower account
     , "Trading blocked: " <> if accountTradingBlocked account then "yes" else "no"
-    , "Crypto status: " <> fromMaybe "not provided" (accountCryptoStatus account)
+    , "Crypto status: " <> maybe "not provided" statusValue (accountCryptoStatus account)
     ]
 
 -- | Kept for compatibility with account tests and downstream users.
