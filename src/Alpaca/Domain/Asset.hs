@@ -84,6 +84,7 @@ data AssetVenue
   | VenueCrxl
   | VenueAscx
   | VenueIndex
+  | VenueNone
   | VenueOther Text
   deriving (Eq, Ord, Show)
 
@@ -102,6 +103,7 @@ assetVenueValue value = case value of
   VenueCrxl -> "CRXL"
   VenueAscx -> "ASCX"
   VenueIndex -> "INDEX"
+  VenueNone -> ""
   VenueOther other -> other
 
 instance FromJSON AssetVenue where
@@ -120,6 +122,7 @@ instance FromJSON AssetVenue where
       "CRXL" -> VenueCrxl
       "ASCX" -> VenueAscx
       "INDEX" -> VenueIndex
+      "" -> VenueNone
       other -> VenueOther other
 
 instance ToJSON AssetVenue where

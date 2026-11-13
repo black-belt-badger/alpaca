@@ -149,7 +149,7 @@ List **all current open positions** (the endpoint has no symbol filter):
 stack exec -- kirke positions
 ```
 
-The response includes crypto and equity positions together. Each row shows the symbol, asset class, long/short side, exact quantity, and market value, current price, and unrealized P/L when supplied. Monetary values and quantities are preserved as strings; there is no floating-point rounding. With no open positions, the CLI prints `No open positions.`
+The response includes crypto and equity positions together. Each row shows the symbol, typed asset class and long/short side, exact quantity, market value, current price, and unrealized P/L. The decoder covers all **22 documented position properties**, including exact decimal strings, required flags, available quantity, swap rates, and the optional nested USD value object for local-currency accounts. Monetary values and quantities are never converted to floating point. With no open positions, the CLI prints `No open positions.` See the [M3 positions API coverage matrix](docs/api/positions.md).
 
 Save the original JSON array instead of a summary:
 

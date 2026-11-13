@@ -53,6 +53,7 @@ spec = do
     host positions `shouldBe` "paper-api.alpaca.markets"
     port positions `shouldBe` 443
     path positions `shouldBe` "/v2/positions"
+    queryString positions `shouldBe` "" -- no path, query or body filters
     redirectCount positions `shouldBe` 0
     requestHeaders positions `shouldBe` requestHeaders request
 
