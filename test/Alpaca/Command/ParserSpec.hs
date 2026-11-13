@@ -1,7 +1,17 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Alpaca.Command.ParserSpec (spec) where
 
 import Alpaca.Command.Account (AccountCommand (..))
 import Alpaca.Command.Assets (AssetClass (..), AssetStatus (..), AssetsCommand (..))
+import Alpaca.Command.Crypto.Bars
+  ( BarsFormat (..)
+  , BarsSort (..)
+  , CryptoBarsCommand (..)
+  , CryptoLocation (..)
+  , parseInstant
+  , parseTimeframe
+  )
 import Alpaca.Command.Order (OrderCommand (..), OrderGetCommand (..), parseOrderId)
 import Alpaca.Command.Orders (OrderDirection (..), OrderStatus (..), OrdersCommand (..))
 import Alpaca.Command.Positions (PositionsCommand (..))
@@ -115,6 +125,38 @@ spec = do
 
   it "rejects an unknown order option" $
     parse ["orders", "--unexpected"] `shouldBe` Nothing
+
+  it "parses historical crypto bars with safe one-page defaults" $ do
+    let timeframe = either error id (parseTimeframe "1Hour")
+    parse ["crypto", "bars", "--symbols", "BTC/USD,ETH/USD", "--timeframe", "1Hour"]
+      `shouldBe` Just (CryptoBars (CryptoBarsCommand
+        ["BTC/USD", "ETH/USD"] Us timeframe Nothing Nothing 1000 BarsAsc 1 Nothing BarsJson Nothing))
+
+  it "parses all historical crypto bar filters and JSONL output" $ do
+    let timeframe = either error id (parseTimeframe "5Min")
+        start = either error id (parseInstant "2026-10-02T00:00:00Z")
+        end = either error id (parseInstant "2026-10-02T02:00:00Z")
+    parse ["crypto", "bars", "--symbols", "SOL/USD", "--location", "us-1",
+           "--timeframe", "5Min", "--start", "2026-10-02T00:00:00Z",
+           "--end", "2026-10-02T02:00:00Z", "--limit", "10000",
+           "--sort", "desc", "--max-pages", "20", "--page-token", "ABC+/==",
+           "--format", "jsonl", "--out", "bars.jsonl"]
+      `shouldBe` Just (CryptoBars (CryptoBarsCommand
+        ["SOL/USD"] Us1 timeframe (Just start) (Just end) 10000 BarsDesc
+        20 (Just "ABC+/==") BarsJsonl (Just "bars.jsonl")))
+
+  it "rejects invalid or missing historical crypto parameters before IO" $ do
+    let base = ["crypto", "bars"]
+    parse base `shouldBe` Nothing
+    parse (base <> ["--symbols", "BTC/USD"]) `shouldBe` Nothing
+    parse (base <> ["--timeframe", "1Min"]) `shouldBe` Nothing
+    mapM_ (\flags -> parse (base <> ["--symbols", "BTC/USD", "--timeframe", "1Min"] <> flags)
+      `shouldBe` Nothing)
+      [["--limit", "10001"], ["--limit", "0"], ["--max-pages", "21"],
+       ["--timeframe", "0Min"], ["--location", "hostile"],
+       ["--symbols", "BTC/USD,,ETH/USD"], ["--start", "yesterday"],
+       ["--format", "csv"], ["--sort", "random"], ["--page-token", ""],
+       ["--out"], ["--unknown"]]
 
   it "rejects an unknown option" $
     parse ["account", "--unexpected"] `shouldBe` Nothing
