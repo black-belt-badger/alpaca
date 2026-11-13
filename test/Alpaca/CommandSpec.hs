@@ -1,6 +1,6 @@
 module Alpaca.CommandSpec (spec) where
 
-import Alpaca.Command.Account (AccountCommand (..))
+import Alpaca.Command.Account (AccountCommand (..), AccountFormat (..))
 import Alpaca.Command.Assets (AssetClass (Crypto), AssetsCommand (..))
 import Alpaca.Command.Order (OrderCommand (..), OrderGetCommand (..), parseOrderId)
 import Alpaca.Command.Orders (OrderDirection (Desc), OrderStatus (OrdersOpen), OrdersCommand (..))
@@ -11,25 +11,25 @@ import Test.Hspec (Spec, it, shouldBe)
 spec :: Spec
 spec = do
   it "wraps account command options" $
-    Account (AccountCommand (Just "account.json"))
-      `shouldBe` Account (AccountCommand (Just "account.json"))
+    Account (AccountCommand (Just "account.json") AccountText False)
+      `shouldBe` Account (AccountCommand (Just "account.json") AccountText False)
 
   it "wraps positions command options" $
     Positions (PositionsCommand Nothing)
       `shouldBe` Positions (PositionsCommand Nothing)
 
   it "distinguishes account and positions" $
-    Account (AccountCommand Nothing) == Positions (PositionsCommand Nothing)
+    Account (AccountCommand Nothing AccountText False) == Positions (PositionsCommand Nothing)
       `shouldBe` False
 
   it "distinguishes assets from account and positions" $ do
     let assets = Assets (AssetsCommand Crypto Nothing Nothing Nothing Nothing)
-    assets == Account (AccountCommand Nothing) `shouldBe` False
+    assets == Account (AccountCommand Nothing AccountText False) `shouldBe` False
     assets == Positions (PositionsCommand Nothing) `shouldBe` False
 
   it "distinguishes order listing from other commands" $ do
     let orders = Orders (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing Nothing Nothing False Nothing Nothing Nothing Nothing)
-    orders == Account (AccountCommand Nothing) `shouldBe` False
+    orders == Account (AccountCommand Nothing AccountText False) `shouldBe` False
     orders == Assets (AssetsCommand Crypto Nothing Nothing Nothing Nothing) `shouldBe` False
     orders == Positions (PositionsCommand Nothing) `shouldBe` False
 
@@ -39,5 +39,5 @@ spec = do
     order == Orders (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing Nothing Nothing False Nothing Nothing Nothing Nothing) `shouldBe` False
 
   it "distinguishes different account command options" $
-    (Account (AccountCommand Nothing) == Account (AccountCommand (Just "account.json")))
+    (Account (AccountCommand Nothing AccountText False) == Account (AccountCommand (Just "account.json") AccountText False))
       `shouldBe` False

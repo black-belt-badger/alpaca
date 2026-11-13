@@ -2,7 +2,7 @@
 
 module Alpaca.Command.ParserSpec (spec) where
 
-import Alpaca.Command.Account (AccountCommand (..))
+import Alpaca.Command.Account (AccountCommand (..), AccountFormat (..))
 import Alpaca.Command.Assets
   ( AssetClass (..), AssetStatus (..), AssetExchange (..), AssetAttribute (..), AssetsCommand (..))
 import Alpaca.Command.Crypto.Bars
@@ -29,11 +29,24 @@ import Test.Hspec (Spec, it, shouldBe)
 spec :: Spec
 spec = do
   it "parses account without an output path" $
-    parse ["account"] `shouldBe` Just (Account (AccountCommand Nothing))
+    parse ["account"] `shouldBe` Just (Account (AccountCommand Nothing AccountText False))
 
   it "parses account with --out" $
     parse ["account", "--out", "account.json"]
-      `shouldBe` Just (Account (AccountCommand (Just "account.json")))
+      `shouldBe` Just (Account (AccountCommand (Just "account.json") AccountText False))
+
+  it "accepts account JSON and check independently and together" $ do
+    parse ["account", "--format", "json"]
+      `shouldBe` Just (Account (AccountCommand Nothing AccountJson False))
+    parse ["account", "--check"]
+      `shouldBe` Just (Account (AccountCommand Nothing AccountText True))
+    parse ["account", "--out", "account.json", "--format", "json", "--check"]
+      `shouldBe` Just (Account (AccountCommand (Just "account.json") AccountJson True))
+
+  it "rejects unsupported/missing account format before credentials" $ do
+    parse ["account", "--format", "yaml"] `shouldBe` Nothing
+    parse ["account", "--format"] `shouldBe` Nothing
+    parse ["account", "--check", "true"] `shouldBe` Nothing
 
   it "rejects --out without a path" $
     parse ["account", "--out"] `shouldBe` Nothing
