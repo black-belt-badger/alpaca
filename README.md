@@ -7,7 +7,7 @@
 [![Haskell CI](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
-**Kirke** is an open-source, unofficial Haskell command-line application for accessing [Alpaca's APIs](https://docs.alpaca.markets/). It offers **read-only account information, open positions, asset discovery, and order history** from Alpaca paper trading, plus **historical crypto bars and trades** from the market-data API. It is not affiliated with, sponsored by, or endorsed by Alpaca Markets.
+**Kirke** is an open-source, unofficial Haskell command-line application for accessing [Alpaca's APIs](https://docs.alpaca.markets/). It offers **read-only account information, open positions, asset discovery, and order history** from Alpaca paper trading, plus **historical crypto bars, trades and quotes** from the market-data API. An explicitly confirmed **paper-only crypto order submission** command is also available; it defaults to a credential-free dry run. It is not affiliated with, sponsored by, or endorsed by Alpaca Markets.
 
 The GitHub repository, Haskell package, and command-line executable are named **Kirke** (`kirke`). Its provider-specific Haskell modules intentionally remain under `Alpaca.*`.
 
@@ -256,9 +256,30 @@ The UUID above is an **illustrative placeholder**, not a real order. Use an ID f
 
 This command is read-only and calls only the **paper trading** API. It never submits, modifies or cancels an order. API reference: [GET /v2/orders/{order_id}](https://docs.alpaca.markets/us/reference/getorderbyorderid-1).
 
+## Submit a crypto paper order (dry run by default)
+
+**Paper trading only.** The new `kirke order submit` command prepares a validated crypto market or limit order. Without `--confirm`, it **only prints the JSON request**: no credentials are loaded and no POST is sent.
+
+```sh
+# Preview without credentials or network (no order placed)
+stack exec -- kirke order submit --symbol BTC/USD --side buy --type market --qty 0.0001 --client-order-id experiment-btc-001
+
+# Preview a GTC limit order
+stack exec -- kirke order submit --symbol BTC/USD --side buy --type limit --qty 0.0001 --limit-price 65000.00 --client-order-id experiment-limit-001
+
+# Explicitly submit ONE order to the paper Trading API
+stack exec -- kirke order submit --symbol BTC/USD --side buy --type market --qty 0.0001 --client-order-id experiment-btc-001 --confirm
+```
+
+A confirmed order can use `--out output/order.json` to save the validated response as private original JSON. The CLI requires `--client-order-id` for stable request identity; reusing it **does not** provide guaranteed idempotency. After a network timeout or server failure, check existing paper orders before retrying. A successful POST does **not** mean the order is filled.
+
+Supported: crypto pairs, `buy|sell`, `market|limit`, `gtc|ioc` (default `gtc`), one of `--qty` or market-only `--notional`, plus limit-only `--limit-price`. Amounts are positive decimal **strings**, never floating-point; USD-quoted notional is capped at two decimal places. Asset-specific size/price increments and buying power are checked by Alpaca. See [full order submission contract, failure handling and safety rules](docs/api/order-submit.md).
+
+**No live trading**, no stop/bracket/options submissions, no implicit retries, and no orders are placed by tests or the private read-only integration script.
+
 ## Historical crypto bars (Alpaca market-data API)
 
-Historical bars use a separate read-only endpoint at **`https://data.alpaca.markets/v1beta3/crypto/{loc}/bars`**, authenticated using the same API-key environment variables. This is **not** the paper-trading endpoint. Kirke never places orders.
+Historical bars use a separate read-only endpoint at **`https://data.alpaca.markets/v1beta3/crypto/{loc}/bars`**, authenticated using the same API-key environment variables. This is **not** the paper-trading endpoint. The historical bars command never places orders.
 
 ```sh
 stack exec -- kirke crypto bars \

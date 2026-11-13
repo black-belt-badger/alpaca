@@ -9,6 +9,8 @@ Release headings are dated only when a release is published.
 
 ### Added
 - `kirke crypto quotes` reads bounded historical crypto best bid/ask data from Alpaca, with validated symbols/location/time, exact `Scientific` prices and sizes, nanosecond timestamp strings, safe continuation pagination, and JSON/JSONL streaming with private atomic output. Matches Medea's read-only historical quotes contract, with synthetic offline and bounded live integration tests.
+- `kirke order submit` — **crypto paper orders only**, dry-run by default with no credentials or network; explicit `--confirm` required for one POST. Typed market/limit, buy/sell, qty/notional, GTC/IOC and price validation, stable caller-provided `client_order_id`, exact decimal JSON strings and private response export.
+- Fixed paper-only authenticated POST, no redirects or retries; sanitized errors and uncertain-outcome guidance, response identity checks and offline request/CLI/decoder tests. No real order submission in CI.
 
 ### Changed
 - Model both `account.status` and optional `account.crypto_status` as a shared, forward-compatible `AccountStatus` enum; unknown future strings round-trip without changing CLI summaries or raw account JSON exports.

@@ -6,6 +6,8 @@ module Alpaca.Command.Order
   , OrderGetCommand (..)
   ) where
 
+import Alpaca.Command.Order.Submit (SubmitCommand)
+
 -- | An Alpaca server-assigned order ID. Its constructor is private so
 -- request builders cannot accidentally interpolate an unsafe path segment.
 newtype OrderId = OrderId String deriving (Eq, Show)
@@ -39,5 +41,7 @@ data OrderGetCommand = OrderGetCommand
   }
   deriving (Eq, Show)
 
-data OrderCommand = GetOrder OrderGetCommand
+data OrderCommand
+  = GetOrder OrderGetCommand
+  | SubmitOrder SubmitCommand
   deriving (Eq, Show)

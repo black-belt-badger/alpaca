@@ -28,6 +28,10 @@ import Alpaca.Command.Assets
   )
 import Alpaca.Command (Command (..))
 import Alpaca.Command.Order (OrderCommand (..), OrderGetCommand (..), parseOrderId)
+import Alpaca.Command.Order.Submit
+  ( SubmitCommand (..), SubmitTimeInForce (SubmitGtc)
+  , parseSubmitSymbol, parseSubmitAmount, parseClientOrderId
+  , parseSubmitSide, parseSubmitKind, parseSubmitTimeInForce )
 import Alpaca.Command.Orders
   ( OrderDirection (Desc), OrderStatus (OrdersOpen), OrdersCommand (..)
   , parseOrderStatus, parseOrderDirection, parseOrderLimit, parseOrderSymbols
@@ -207,7 +211,32 @@ orderParser =
   hsubparser
     (command "get"
       (info (GetOrder <$> orderGetParser)
-        (progDesc "Fetch a single Alpaca paper order by UUID")))
+        (progDesc "Fetch a single Alpaca paper order by UUID"))
+      <> command "submit"
+        (info (SubmitOrder <$> orderSubmitParser)
+          (progDesc "Prepare a crypto paper order (dry run unless --confirm)")))
+
+orderSubmitParser :: Parser SubmitCommand
+orderSubmitParser =
+  SubmitCommand
+    <$> option (eitherReader parseSubmitSymbol)
+      (long "symbol" <> metavar "PAIR" <> help "One crypto pair, e.g. BTC/USD")
+    <*> option (eitherReader parseSubmitSide)
+      (long "side" <> metavar "SIDE" <> help "buy or sell")
+    <*> option (eitherReader parseSubmitKind)
+      (long "type" <> metavar "TYPE" <> help "market or limit")
+    <*> option (eitherReader parseSubmitTimeInForce)
+      (long "time-in-force" <> metavar "TIF" <> value SubmitGtc <> help "gtc (default) or ioc")
+    <*> optional (option (eitherReader parseSubmitAmount)
+      (long "qty" <> metavar "DECIMAL" <> help "Positive quantity; exclusive with --notional"))
+    <*> optional (option (eitherReader parseSubmitAmount)
+      (long "notional" <> metavar "DECIMAL" <> help "Positive amount; market only, exclusive with --qty"))
+    <*> optional (option (eitherReader parseSubmitAmount)
+      (long "limit-price" <> metavar "DECIMAL" <> help "Required for limit; forbidden for market"))
+    <*> option (eitherReader parseClientOrderId)
+      (long "client-order-id" <> metavar "ID" <> help "Required stable client identifier; do not reuse for different orders")
+    <*> switch (long "confirm" <> help "Actually submit to Alpaca PAPER API; default is offline dry run")
+    <*> outputParser
 
 orderGetParser :: Parser OrderGetCommand
 orderGetParser =

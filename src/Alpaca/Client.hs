@@ -13,6 +13,8 @@ module Alpaca.Client
   , cryptoBarsRequest
   , fetchOrders
   , fetchOrder
+  , fetchSubmitOrder
+  , submitOrderRequest
   , orderRequest
   , ordersRequest
   , assetsRequest
@@ -50,6 +52,7 @@ import Alpaca.Command.Crypto.Bars
 import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
 import Alpaca.Command.Crypto.Quotes (CryptoQuotesCommand (..))
 import Alpaca.Command.Order (OrderGetCommand (..), orderIdSegment)
+import Alpaca.Command.Order.Submit (PreparedOrder, submittedOrderBody)
 import Alpaca.Credentials (Credentials (..))
 import Alpaca.Command.Orders
   ( OrdersCommand (..), orderStatusParameter, orderDirectionParameter
@@ -58,6 +61,7 @@ import Alpaca.Command.Orders
 import Network.HTTP.Client
   ( HttpException
   , Request (..)
+  , RequestBody (..)
   , Response
   , httpLbs
   , newManager
@@ -95,6 +99,10 @@ fetchOrders credentials = fetchAuthenticated . ordersRequest credentials
 -- | Fetch a single paper order by its server-issued UUID.
 fetchOrder :: Credentials -> OrderGetCommand -> IO (Either AlpacaError ByteString)
 fetchOrder credentials = fetchAuthenticated . orderRequest credentials
+
+-- | A single paper-only POST; no automatic retry, no live-trading host.
+fetchSubmitOrder :: Credentials -> PreparedOrder -> IO (Either AlpacaError ByteString)
+fetchSubmitOrder credentials = fetchAuthenticated . submitOrderRequest credentials
 
 -- | All endpoints use the same protected HTTPS transport; the URL specifies
 -- either the trading (paper) API or the read-only market-data API.
@@ -170,6 +178,16 @@ orderRequest credentials options =
   setQueryString
     (if getOrderNested options then [("nested", Just "true")] else [])
     (paperRequest credentials ("/v2/orders/" <> orderIdSegment (getOrderId options)))
+
+-- | Pure request construction from a validated payload. No redirects or
+-- retried non-idempotent requests; responses are checked by the caller.
+submitOrderRequest :: Credentials -> PreparedOrder -> Request
+submitOrderRequest credentials prepared =
+  let base = paperRequest credentials "/v2/orders"
+  in base { method = "POST"
+          , requestHeaders = ("Content-Type", "application/json") : requestHeaders base
+          , requestBody = RequestBodyLBS (submittedOrderBody prepared)
+          }
 
 -- | Use allowlisted crypto location and query serialization, never a
 -- user-controlled URL; page tokens are opaque and percent-encoded.
