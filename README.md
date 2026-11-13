@@ -295,6 +295,12 @@ Work is tracked in [GitHub Issues](https://github.com/black-belt-badger/kirke/is
 
 A separate, publicly released Rust implementation called [**Medea**](https://github.com/black-belt-badger/medea) follows the same outward behavior using idiomatic Rust code and independent versioning. Endpoint parity is implemented incrementally: Haskell first, then Rust.
 
+## Visual identity
+
+<img src="docs/color.png" alt="Kirke — small color icon" width="40" height="40">
+
+The logo, illustrations, and source images are documented in [Branding and asset usage](docs/BRANDING.md). They are project-specific, AI-assisted artwork selected by the maintainer, **not** official Alpaca artwork or a mark of affiliation. The README banner uses an optimized WebP display copy while the original images remain committed.
+
 ## Contributing and security
 
 Contributions, bug reports, and proposals are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and use the issue templates. For private vulnerability reporting, **do not open a public issue**: follow [SECURITY.md](SECURITY.md).
