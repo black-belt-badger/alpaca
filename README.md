@@ -13,7 +13,7 @@ The GitHub repository, Haskell package, and command-line executable are named **
 
 The project is early in development. Its first goal is a small, useful, testable CLI; additional commands may follow as separate issues.
 
-**CLI consistency roadmap:** Kirke and Medea share a [proposed CLI/diagnostics contract](docs/cli-contract.md) for Unix pipes, output formats, secure exports and factual findings. This is a staged design: the proposed flags and exit codes are **not yet implemented**, and current commands retain their released behavior. The first implementation slice adds pure account findings without printing or acting on them.
+**CLI consistency roadmap:** Kirke and Medea share a [CLI/diagnostics contract](docs/cli-contract.md). The account command now supports `--format text|json` (raw JSON on stdout) and `--check` (factual findings on stderr). Other endpoints retain their released behavior; global colors, diagnostic modes and exit-code migration are still proposals.
 
 ## Current functionality
 
@@ -22,6 +22,8 @@ The project is early in development. Its first goal is a small, useful, testable
 | `kirke --help` | List commands and general options |
 | `kirke account --help` | Show account-specific options |
 | `kirke account` | Fetch a paper account and print a readable summary |
+| `kirke account --format json` | Emit complete unmodified provider JSON to stdout (pipe to `jq`) |
+| `kirke account --check` | Include account findings on stderr, without altering successful exit status |
 | `kirke account --out PATH` | Fetch a paper account and save the complete API JSON response |
 | `kirke positions --help` | Show open-position options |
 | `kirke positions` | List current open positions (crypto and equities) |

@@ -1,6 +1,6 @@
 module Alpaca.Command.Parser (commandParserInfo) where
 
-import Alpaca.Command.Account (AccountCommand (..))
+import Alpaca.Command.Account (AccountCommand (..), AccountFormat (AccountText), parseAccountFormat)
 import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
 import Alpaca.Command.Crypto.Quotes (CryptoQuotesCommand (..))
 import Alpaca.Command.Crypto.Bars
@@ -178,7 +178,13 @@ cryptoQuotesParser =
       (strOption (long "out" <> metavar "PATH" <> help "Stream JSON page envelopes or JSONL quotes privately"))
 
 accountParser :: Parser AccountCommand
-accountParser = AccountCommand <$> outputParser
+accountParser =
+  AccountCommand
+    <$> outputParser
+    <*> option (eitherReader parseAccountFormat)
+      (long "format" <> metavar "FORMAT" <> value AccountText <> help "text (default) or json (original provider response)")
+    <*> switch
+      (long "check" <> help "Print factual account findings to stderr (does not change exit status)")
 
 positionsParser :: Parser PositionsCommand
 positionsParser = PositionsCommand <$> outputParser
