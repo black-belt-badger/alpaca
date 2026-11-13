@@ -6,6 +6,8 @@ module Alpaca.Client
   , fetchPositions
   , fetchAssets
   , fetchCryptoBarsPage
+  , fetchCryptoTradesPage
+  , cryptoTradesRequest
   , cryptoBarsRequest
   , fetchOrders
   , fetchOrder
@@ -28,12 +30,16 @@ import qualified Data.ByteString.Lazy as Lazy
 import Data.Text.Encoding (encodeUtf8)
 import Alpaca.Command.Assets (AssetClass, AssetStatus, assetClassParameter, assetStatusParameter)
 import Alpaca.Command.Crypto.Bars
-  ( CryptoBarsCommand (..)
+  ( BarsInstant
+  , BarsSort
+  , CryptoBarsCommand (..)
+  , CryptoLocation
   , instantParameter
   , locationParameter
   , sortParameter
   , timeframeParameter
   )
+import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
 import Alpaca.Command.Order (OrderGetCommand (..), orderIdSegment)
 import Alpaca.Credentials (Credentials (..))
 import Alpaca.Command.Orders (OrdersCommand (..), orderStatusParameter, orderDirectionParameter)
@@ -86,6 +92,12 @@ fetchCryptoBarsPage
 fetchCryptoBarsPage credentials options token =
   fetchAuthenticated (cryptoBarsRequest credentials options token)
 
+-- | Read-only historical trades use the same HTTPS transport and credentials.
+fetchCryptoTradesPage
+  :: Credentials -> CryptoTradesCommand -> Maybe Text.Text -> IO (Either AlpacaError ByteString)
+fetchCryptoTradesPage credentials options token =
+  fetchAuthenticated (cryptoTradesRequest credentials options token)
+
 fetchAuthenticated :: Request -> IO (Either AlpacaError ByteString)
 fetchAuthenticated request = do
   result <-
@@ -135,22 +147,67 @@ orderRequest credentials options =
 
 -- | Use allowlisted crypto location and query serialization, never a
 -- user-controlled URL; page tokens are opaque and percent-encoded.
+-- | Shared historical crypto request: only the allowlisted endpoint and
+-- the optional bars timeframe differ between bars and trades.
+data CryptoDataQuery = CryptoDataQuery
+  { queryEndpoint :: String
+  , querySymbols :: [Text.Text]
+  , queryLocation :: CryptoLocation
+  , queryTimeframe :: Maybe Text.Text
+  , queryStart :: Maybe BarsInstant
+  , queryEnd :: Maybe BarsInstant
+  , queryLimit :: Int
+  , querySort :: BarsSort
+  , queryToken :: Maybe Text.Text
+  }
+
 cryptoBarsRequest :: Credentials -> CryptoBarsCommand -> Maybe Text.Text -> Request
 cryptoBarsRequest credentials options token =
+  cryptoDataRequest credentials CryptoDataQuery
+    { queryEndpoint = "bars"
+    , querySymbols = cryptoBarsSymbols options
+    , queryLocation = cryptoBarsLocation options
+    , queryTimeframe = Just (timeframeParameter (cryptoBarsTimeframe options))
+    , queryStart = cryptoBarsStart options
+    , queryEnd = cryptoBarsEnd options
+    , queryLimit = cryptoBarsLimit options
+    , querySort = cryptoBarsSort options
+    , queryToken = token
+    }
+
+cryptoTradesRequest :: Credentials -> CryptoTradesCommand -> Maybe Text.Text -> Request
+cryptoTradesRequest credentials options token =
+  cryptoDataRequest credentials CryptoDataQuery
+    { queryEndpoint = "trades"
+    , querySymbols = cryptoTradesSymbols options
+    , queryLocation = cryptoTradesLocation options
+    , queryTimeframe = Nothing
+    , queryStart = cryptoTradesStart options
+    , queryEnd = cryptoTradesEnd options
+    , queryLimit = cryptoTradesLimit options
+    , querySort = cryptoTradesSort options
+    , queryToken = token
+    }
+
+cryptoDataRequest :: Credentials -> CryptoDataQuery -> Request
+cryptoDataRequest credentials query =
   setQueryString
-    ( [ ("symbols", Just (encodeUtf8 (Text.intercalate "," (cryptoBarsSymbols options))))
-      , ("timeframe", Just (encodeUtf8 (timeframeParameter (cryptoBarsTimeframe options))))
-      ]
-        <> maybe [] (\start -> [("start", Just (encodeUtf8 (instantParameter start)))]) (cryptoBarsStart options)
-        <> maybe [] (\end -> [("end", Just (encodeUtf8 (instantParameter end)))]) (cryptoBarsEnd options)
-        <> [ ("limit", Just (Char8.pack (show (cryptoBarsLimit options))))
-           , ("sort", Just (encodeUtf8 (sortParameter (cryptoBarsSort options))))
+    ( [("symbols", Just (encodeUtf8 (Text.intercalate "," (querySymbols query))))]
+        <> maybe [] (\timeframe -> [("timeframe", Just (encodeUtf8 timeframe))])
+          (queryTimeframe query)
+        <> maybe [] (\start -> [("start", Just (encodeUtf8 (instantParameter start)))])
+          (queryStart query)
+        <> maybe [] (\end -> [("end", Just (encodeUtf8 (instantParameter end)))])
+          (queryEnd query)
+        <> [ ("limit", Just (Char8.pack (show (queryLimit query))))
+           , ("sort", Just (encodeUtf8 (sortParameter (querySort query))))
            ]
-        <> maybe [] (\t -> [("page_token", Just (encodeUtf8 t))]) token
+        <> maybe [] (\token -> [("page_token", Just (encodeUtf8 token))])
+          (queryToken query)
     )
     (authenticatedRequest credentials
       ("https://data.alpaca.markets/v1beta3/crypto/" <>
-        locationParameter (cryptoBarsLocation options) <> "/bars"))
+        locationParameter (queryLocation query) <> "/" <> queryEndpoint query))
 
 paperRequest :: Credentials -> String -> Request
 paperRequest credentials endpoint =

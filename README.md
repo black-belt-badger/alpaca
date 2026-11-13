@@ -7,7 +7,7 @@
 [![Haskell CI](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
-**Kirke** is an open-source, unofficial Haskell command-line application for accessing [Alpaca's APIs](https://docs.alpaca.markets/). It offers **read-only account information, open positions, asset discovery, and order history** from Alpaca paper trading, plus **historical crypto bar data** from the market-data API. It is not affiliated with, sponsored by, or endorsed by Alpaca Markets.
+**Kirke** is an open-source, unofficial Haskell command-line application for accessing [Alpaca's APIs](https://docs.alpaca.markets/). It offers **read-only account information, open positions, asset discovery, and order history** from Alpaca paper trading, plus **historical crypto bars and trades** from the market-data API. It is not affiliated with, sponsored by, or endorsed by Alpaca Markets.
 
 The GitHub repository, Haskell package, and command-line executable are named **Kirke** (`kirke`). Its provider-specific Haskell modules intentionally remain under `Alpaca.*`.
 
@@ -36,10 +36,13 @@ The project is early in development. Its first goal is a small, useful, testable
 | `kirke crypto bars --symbols BTC/USD --timeframe 1Hour` | Retrieve one bounded page of historical crypto OHLCV bars |
 | `kirke crypto bars --symbols BTC/USD,ETH/USD --timeframe 5Min --max-pages 2 --out PATH` | Follow up to two pages and save the JSON page envelopes privately |
 | `kirke crypto bars --symbols BTC/USD --timeframe 1Min --format jsonl --out PATH` | Save one JSONL record per bar |
+| `kirke crypto trades --symbols BTC/USD,ETH/USD` | Fetch a bounded page of individual historical executions |
+| `kirke crypto trades --symbols BTC/USD --max-pages 2 --out PATH` | Save complete trade pages and continuation token privately |
+| `kirke crypto trades --symbols BTC/USD --format jsonl --out PATH` | Stream symbolized trade records to an atomic private JSONL file |
 
 The summary includes account number, status, currency, cash, equity, buying power, trading-blocked flag, and crypto status (when available).
 
-**Not implemented:** live-account access, order submission/cancellation, historical trades/quotes, streaming, and shell completion. Listing positions does **not** close them or place orders. No trading decisions are made or orders placed.
+**Not implemented:** live-account access, order submission/cancellation, historical quotes, live streaming, and shell completion. Listing positions does **not** close them or place orders. No trading decisions are made or orders placed.
 
 ## Requirements
 
@@ -248,9 +251,35 @@ stack exec -- kirke crypto bars \
 
 The typed decoder uses exact **Scientific decimal** values (no binary floating-point rounding); raw timestamps preserve the API's original nanosecond strings. JSON page objects retain additional upstream fields, although whitespace and numeric spelling may be normalized when serialized. File exports use atomic replacement and owner-only permissions, normally `0600`, and the parent directory must already exist. Bad dates, symbols, timeframes and page limits fail before networking. A repeated page token is rejected instead of looping indefinitely. This is only a small data-access client; Metis/Ariadne handle coverage planning and bulk backfill.
 
+## Historical crypto trades (Alpaca market-data API)
+
+Individual executions come from **`GET https://data.alpaca.markets/v1beta3/crypto/{loc}/trades`**, using the same credentials and read-only market-data host as bars. Unlike bars, **there is no timeframe argument**.
+
+```sh
+stack exec -- kirke crypto trades \
+  --symbols BTC/USD,ETH/USD,SOL/USD \
+  --start 2026-10-02T00:00:00Z --end 2026-10-03T00:00:00Z
+
+stack exec -- kirke crypto trades \
+  --symbols BTC/USD,ETH/USD --location us --limit 100 \
+  --max-pages 3 --sort asc --out output/crypto-trades.json
+
+stack exec -- kirke crypto trades \
+  --symbols BTC/USD --limit 1000 --max-pages 2 \
+  --format jsonl --out output/btc-trades.jsonl
+```
+
+**Filters:** `--symbols` (required, 1–30 comma-separated pairs like `BTC/USD`), `--location us|us-1|us-2|eu-1|bs-1` (default `us`), inclusive `--start` and `--end` (YYYY-MM-DD or RFC3339 with an explicit timezone), `--limit 1..10000` (default 1000 **across all symbols**), `--sort asc|desc` (default `asc`), `--max-pages 1..20` (default **1**), and optional `--page-token` to continue. A short page does not imply completion: check `next_page_token`. See [Alpaca historical trades API](https://docs.alpaca.markets/us/reference/cryptotrades-1).
+
+**Output:** By default a human-readable summary reports page and trade counts per symbol, and whether a continuation token remains. With `--out PATH`, the default `--format json` produces `{"pages":[API_PAGE_1,API_PAGE_2,...],"next_page_token":...}`: complete API page objects, including undocumented fields, plus the final continuation token. Resume a later invocation with `--page-token`. With `--format jsonl`, stdout or `--out PATH` contains one JSON record per trade with `symbol`, `i` (integer trade ID), `p` (price), `s` (size), `t` (timestamp), and `tks` (taker side or null). JSONL does **not** contain a continuation token; choose JSON for resumable extraction.
+
+Prices and sizes use Haskell `Scientific` and trade IDs `Integer`, preserving numeric precision without binary floating point. Timestamps retain all fractional digits, including nanoseconds. Original provider JSON fields survive in the JSON page envelopes, though serialization may normalize whitespace and numeric spelling. The command **processes one API page at a time**; summaries and file writes do not accumulate historical trades in memory. Output files are atomically replaced with owner-only permissions (typically `0600`); if any later page fails, the previous destination is left untouched. JSONL directed to stdout may already have printed earlier pages if a later request fails. For reliable exports use `--out` and an existing parent directory.
+
+This is a bounded API client, not Ariadne/Metis backfill orchestration or trade execution. **No order is submitted or modified.**
+
 ## Integration test (maintainers)
 
-`scripts/it.sh` performs live requests against the **paper** API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials`, installs the local CLI using Stack, writes account, positions, assets, orders and a small crypto-bars sample under the ignored `output/` directory, checks JSON structures using `jq`, and verifies private file permissions using GNU `stat`.
+`scripts/it.sh` performs live requests against the paper Trading API and read-only crypto Market Data API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials`, installs the local CLI using Stack, writes account, positions, assets, orders, and small crypto-bars and crypto-trades samples under the ignored `output/` directory, checks JSON structures using `jq`, and verifies private file permissions using GNU `stat`.
 
 On a trusted Linux machine with paper credentials, `jq`, and Stack's executable directory on `PATH`:
 

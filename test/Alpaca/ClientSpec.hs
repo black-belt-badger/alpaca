@@ -7,6 +7,7 @@ import Alpaca.Client
   , accountRequest
   , assetsRequest
   , cryptoBarsRequest
+  , cryptoTradesRequest
   , ordersRequest
   , orderRequest
   , positionsRequest
@@ -23,6 +24,7 @@ import Alpaca.Command.Crypto.Bars
   , parseInstant
   , parseTimeframe
   )
+import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
 import Alpaca.Command.Order (OrderGetCommand (..), parseOrderId)
 import Alpaca.Command.Orders (OrderDirection (..), OrderStatus (..), OrdersCommand (..))
 import Alpaca.Credentials (Credentials (..))
@@ -109,6 +111,31 @@ spec = do
   it "distinguishes HTTP 404 from 401 without exposing provider body" $ do
     interpretPaperResponse 404 "private provider error" `shouldBe` Left (UnexpectedStatus 404)
     interpretPaperResponse 401 "private provider error" `shouldBe` Left (UnexpectedStatus 401)
+
+  it "authenticates historical trades with the data API and correctly encoded filters" $ do
+    let start = either error id (parseInstant "2026-10-02T00:00:00.123456789Z")
+        end = either error id (parseInstant "2026-10-02T02:00:00Z")
+        options = CryptoTradesCommand ["BTC/USD", "ETH/USD"] Us
+          (Just start) (Just end) 25 BarsAsc 2 Nothing BarsJson Nothing
+        trades = cryptoTradesRequest credentials options Nothing
+    method trades `shouldBe` "GET"
+    secure trades `shouldBe` True
+    host trades `shouldBe` "data.alpaca.markets"
+    port trades `shouldBe` 443
+    path trades `shouldBe` "/v1beta3/crypto/us/trades"
+    redirectCount trades `shouldBe` 0
+    requestHeaders trades `shouldBe` requestHeaders request
+    queryString trades `shouldBe`
+      "?symbols=BTC%2FUSD%2CETH%2FUSD&start=2026-10-02T00%3A00%3A00.123456789Z&end=2026-10-02T02%3A00%3A00Z&limit=25&sort=asc"
+
+  it "encodes opaque trades page tokens and location without polluting query" $ do
+    let options = CryptoTradesCommand ["SOL/USD"] Eu1
+          Nothing Nothing 10000 BarsDesc 3 Nothing BarsJson Nothing
+        trades = cryptoTradesRequest credentials options (Just "ABC+/==")
+    path trades `shouldBe` "/v1beta3/crypto/eu-1/trades"
+    queryString trades `shouldBe`
+      "?symbols=SOL%2FUSD&limit=10000&sort=desc&page_token=ABC%2B%2F%3D%3D"
+    requestHeaders trades `shouldBe` requestHeaders request
 
   it "builds authenticated historical bars requests to the market-data host" $ do
     let timeframe = either error id (parseTimeframe "1Hour")

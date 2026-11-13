@@ -11,8 +11,8 @@ category:            Network
 description:         |
   Unofficial Haskell command-line application for Alpaca's paper Trading API.
   Supports reading paper account information, open positions, assets, and
-  order history and details, plus historical crypto bars as readable summaries
-  or JSON/JSONL files. Does not support live trading or order placement.
+  order history and details, plus historical crypto bars and trades as
+  readable summaries or JSON/JSONL files. Does not support live trading or order placement.
   See https://github.com/black-belt-badger/kirke for documentation.
 
 extra-source-files:

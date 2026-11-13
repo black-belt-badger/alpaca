@@ -8,6 +8,8 @@ Release headings are dated only when a release is published.
 ## Unreleased
 
 ### Added
+- `kirke crypto trades` fetches bounded historical crypto executions with typed symbol, location, timestamp, limit, sort and token-based pagination filters, sharing the market-data request builder with bars.
+- `Integer` trade IDs, exact-decimal `Scientific` prices and sizes, nanosecond timestamp strings and optional taker side; streaming JSONL/JSON page-envelope exports use owner-only atomic files and roll back on later-page errors.
 - `kirke crypto bars` fetches authenticated historical crypto OHLCV bars with explicit symbols, location, timeframe, date bounds, page size, sorting and bounded token-based pagination.
 - Typed, lossless-decimal Scientific bars, nanosecond timestamp strings, complete JSON page-envelope export, JSONL bar records, private output and offline/live integration tests.
 - `kirke order get ORDER_ID` fetches one paper order using a validated UUID, with optional `--nested` and private `--out PATH` for complete JSON.
