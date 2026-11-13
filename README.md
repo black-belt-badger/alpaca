@@ -40,7 +40,7 @@ The project is early in development. Its first goal is a small, useful, testable
 | `kirke crypto trades --symbols BTC/USD --max-pages 2 --out PATH` | Save complete trade pages and continuation token privately |
 | `kirke crypto trades --symbols BTC/USD --format jsonl --out PATH` | Stream symbolized trade records to an atomic private JSONL file |
 
-The summary includes account number, status, currency, cash, equity, buying power, trading-blocked flag, and crypto status (when available).
+The summary includes account number, status, currency, cash, equity, buying power, trading-blocked flag, and crypto status (when available). Both statuses are typed account-status enums (not boolean ACTIVE/INACTIVE flags); they retain new Alpaca values safely. See the [M3 account coverage notes](docs/api/account.md).
 
 **Not implemented:** live-account access, order submission/cancellation, historical quotes, live streaming, and shell completion. Listing positions does **not** close them or place orders. No trading decisions are made or orders placed.
 
