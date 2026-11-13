@@ -9,7 +9,7 @@ module Alpaca.Command.Orders.Run
 import Alpaca.Client (alpacaErrorMessage, fetchOrders)
 import Alpaca.Command.Orders (OrdersCommand (..), validateOrdersCommand)
 import Alpaca.Credentials (credentialErrorMessage, loadCredentials)
-import Alpaca.Domain.Order (Order (..), decodeOrders)
+import Alpaca.Domain.Order (Order (..), OrderDetails (..), decodeOrders, orderSideValue, orderStateValue, orderTypeValue)
 import Alpaca.Output (savePrivateJson)
 import Control.Exception (IOException, displayException, try)
 import Data.Text (Text)
@@ -46,19 +46,30 @@ renderOrderSummary order = Text.unlines ("Kirke — Alpaca paper order" : render
 
 renderOrder :: Order -> [Text]
 renderOrder order =
-  [ orderSymbol order <> " (" <> value (orderAssetClass order) <> ", "
-      <> orderSide order <> " " <> orderType order <> ", " <> orderState order <> ")"
+  [ value (orderSymbol order) <> " (" <> value (orderAssetClass order) <> ", "
+      <> maybe "not provided" orderSideValue (orderSide order) <> " "
+      <> maybe "not provided" orderTypeValue (orderType order) <> ", "
+      <> orderStateValue (orderState order) <> ")"
   , "  ID: " <> orderId order
-  , "  Client order ID: " <> orderClientOrderId order
+  , "  Client order ID: " <> value (orderClientOrderId order)
   , "  Quantity: " <> value (orderQty order)
   , "  Notional: " <> value (orderNotional order)
-  , "  Filled quantity: " <> orderFilledQty order
+  , "  Filled quantity: " <> value (orderFilledQty order)
   , "  Filled average price: " <> value (orderFilledAvgPrice order)
   , "  Limit price: " <> value (orderLimitPrice order)
   , "  Stop price: " <> value (orderStopPrice order)
-  , "  Created at: " <> orderCreatedAt order
+  , "  Created at: " <> value (orderCreatedAt order)
   , "  Submitted at: " <> value (orderSubmittedAt order)
   , "  Filled at: " <> value (orderFilledAt order)
-  ]
+  ] <> case orderLegs order of
+      Just legs@(_ : _) ->
+        ("  Legs: " <> Text.pack (show (length legs))) : map renderLeg legs
+      _ -> []
   where
     value = maybe "not provided" id
+
+    renderLeg leg =
+      "    " <> value (orderSymbol leg)
+        <> ": " <> maybe "not provided" orderSideValue (orderSide leg)
+        <> ", ratio " <> value (orderRatioQty (orderDetails leg))
+        <> ", " <> orderStateValue (orderState leg)

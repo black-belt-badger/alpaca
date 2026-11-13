@@ -229,7 +229,7 @@ stack exec -- kirke orders --status all --limit 10 \
   --before-order-id 9275f66a-0a1b-4a22-8c55-167416c7cf14
 ```
 
-The UUID is an example; use an existing order's server-issued `id`, not `client_order_id`. This endpoint does **not** have a page token, and Kirke does not automatically paginate. It prints `No matching orders.` for an empty result. Prices and quantities remain exact decimal **strings**, including optional/notional orders; null fields appear as `not provided`. See the [M3 orders request coverage notes](docs/api/orders.md).
+The UUID is an example; use an existing order's server-issued `id`, not `client_order_id`. This endpoint does **not** have a page token, and Kirke does not automatically paginate. It prints `No matching orders.` for an empty result. Prices and quantities remain exact decimal **strings**, including optional/notional orders; null fields appear as `not provided`. The response decoder now models published common and leg-specific order fields, including six forward-compatible typed enums, partial fills and nested options with exact `ratio_qty`. Readable summaries include nested leg counts and ratios; `--out` still preserves all original JSON bytes, including unknown future properties. See the [M3 request coverage](docs/api/orders.md) and [response-field matrix](docs/api/orders-response.md).
 
 Save the complete original provider response instead of displaying a summary:
 
@@ -249,7 +249,7 @@ stack exec -- kirke order get 9275f66a-0a1b-4a22-8c55-167416c7cf14 --nested
 stack exec -- kirke order get 9275f66a-0a1b-4a22-8c55-167416c7cf14 --out output/order.json
 ```
 
-The UUID above is an **illustrative placeholder**, not a real order. Use an ID from your paper account. Kirke validates canonical UUID syntax before sending a request, and `--nested` adds Alpaca's optional `nested=true` parameter, which rolls up multi-leg orders. Without `--nested`, no query parameter is sent. A missing order produces a distinct `HTTP 404` diagnostic; other HTTP, credential, connection and invalid-JSON failures remain separate. A successful response is an **order object**, not an array. The readable view reuses order-listing fields, preserving decimal strings and nullable values. JSON output preserves the complete provider object, including nested `legs` when supplied, and uses the same private atomic writer as other commands.
+The UUID above is an **illustrative placeholder**, not a real order. Use an ID from your paper account. Kirke validates canonical UUID syntax before sending a request, and `--nested` adds Alpaca's optional `nested=true` parameter, which rolls up multi-leg orders. Without `--nested`, no query parameter is sent. A missing order produces a distinct `HTTP 404` diagnostic; other HTTP, credential, connection and invalid-JSON failures remain separate. A successful response is an **order object**, not an array. The readable view reuses the same complete typed order decoder as the listing endpoint, preserving decimal strings and nullable values, including typed multi-leg option children. JSON output preserves the complete provider object, including nested `legs` when supplied, and uses the same private atomic writer as other commands.
 
 This command is read-only and calls only the **paper trading** API. It never submits, modifies or cancels an order. API reference: [GET /v2/orders/{order_id}](https://docs.alpaca.markets/us/reference/getorderbyorderid-1).
 

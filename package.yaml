@@ -24,6 +24,9 @@ extra-source-files:
 extra-doc-files:
 - CHANGELOG.md
 
+data-files:
+- test/fixtures/orders/*.json
+
 dependencies:
   aeson: ">= 2.2 && < 2.3"
   base: ">= 4.7 && < 5"

@@ -2,7 +2,9 @@
 
 module Alpaca.Domain.OrderSpec (spec) where
 
-import Alpaca.Domain.Order (Order (..), decodeOrder, decodeOrders)
+import Alpaca.Domain.Order
+  ( Order (..), OrderSide (..), OrderState (..), OrderType (..)
+  , decodeOrder, decodeOrders)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as Bytes
 import Data.Either (isLeft)
@@ -13,18 +15,18 @@ spec = do
   it "decodes crypto and equity orders with exact decimal strings" $ do
     let decoded = decodeOrders sample
     fmap length decoded `shouldBe` Right 2
-    fmap (map orderSymbol) decoded `shouldBe` Right ["BTCUSD", "AAPL"]
-    fmap (map orderSide) decoded `shouldBe` Right ["buy", "sell"]
-    fmap (map orderType) decoded `shouldBe` Right ["market", "limit"]
+    fmap (map orderSymbol) decoded `shouldBe` Right [Just "BTCUSD", Just "AAPL"]
+    fmap (map orderSide) decoded `shouldBe` Right [Just OrderBuy, Just OrderSell]
+    fmap (map orderType) decoded `shouldBe` Right [Just TypeMarket, Just TypeLimit]
     fmap (map orderQty) decoded `shouldBe` Right [Just "0.000000000123456789", Nothing]
     fmap (map orderNotional) decoded `shouldBe` Right [Nothing, Just "123.45000000"]
     fmap (map orderFilledAvgPrice) decoded `shouldBe` Right [Just "90000.123456789", Nothing]
-    fmap (map orderState) decoded `shouldBe` Right ["filled", "new"]
+    fmap (map orderState) decoded `shouldBe` Right [StateFilled, StateNew]
 
   it "decodes an individual order with missing/null optional fields" $ do
-    let response = "{\"id\":\"id\",\"client_order_id\":\"client\",\"symbol\":\"SOLUSD\",\"side\":\"buy\",\"type\":\"market\",\"status\":\"new\",\"filled_qty\":\"0.00000000000001\",\"created_at\":\"2026-11-13T00:00:00Z\",\"qty\":null,\"submitted_at\":null,\"legs\":[{\"provider_specific\":true}]}"
-    fmap orderSymbol (decodeOrder response) `shouldBe` Right "SOLUSD"
-    fmap orderFilledQty (decodeOrder response) `shouldBe` Right "0.00000000000001"
+    let response = "{\"id\":\"id\",\"client_order_id\":\"client\",\"symbol\":\"SOLUSD\",\"side\":\"buy\",\"type\":\"market\",\"status\":\"new\",\"filled_qty\":\"0.00000000000001\",\"created_at\":\"2026-11-13T00:00:00Z\",\"qty\":null,\"submitted_at\":null,\"legs\":[]}"
+    fmap orderSymbol (decodeOrder response) `shouldBe` Right (Just "SOLUSD")
+    fmap orderFilledQty (decodeOrder response) `shouldBe` Right (Just "0.00000000000001")
     fmap orderQty (decodeOrder response) `shouldBe` Right Nothing
     fmap orderFilledAt (decodeOrder response) `shouldBe` Right Nothing
     fmap orderAssetClass (decodeOrder response) `shouldBe` Right Nothing
