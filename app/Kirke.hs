@@ -4,6 +4,7 @@ import Alpaca.Command (Command (..))
 import Alpaca.Command.Account.Run (runAccount)
 import Alpaca.Command.Assets.Run (runAssets)
 import Alpaca.Command.Crypto.Bars.Run (runCryptoBars)
+import Alpaca.Command.Crypto.Trades.Run (runCryptoTrades)
 import Alpaca.Command.Order.Run (runOrder)
 import Alpaca.Command.Orders.Run (runOrders)
 import Alpaca.Command.Positions.Run (runPositions)
@@ -20,3 +21,4 @@ main = do
     Orders options -> runOrders options
     Order options -> runOrder options
     CryptoBars options -> runCryptoBars options
+    CryptoTrades options -> runCryptoTrades options

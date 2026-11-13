@@ -1,4 +1,4 @@
-module Alpaca.Output (savePrivateJson) where
+module Alpaca.Output (savePrivateJson, withPrivateOutput) where
 
 import Control.Exception (onException)
 import Control.Monad (unless)
@@ -17,6 +17,20 @@ savePrivateJson path bytes = do
   let cleanup = cleanupTemporary temporary handle
   (ByteString.hPut handle bytes >> hClose handle >> renameFile temporary path)
     `onException` cleanup
+
+-- | Stream data to an owner-only temporary file and rename only on success.
+-- A failed API page or callback discards the temporary file, leaving any
+-- existing destination untouched. Exceptions also clean up the temporary.
+withPrivateOutput :: FilePath -> (Handle -> IO (Either String a)) -> IO (Either String a)
+withPrivateOutput path write = do
+  (temporary, handle) <- openBinaryTempFile (takeDirectory path) ".kirke-json-"
+  let cleanup = cleanupTemporary temporary handle
+  result <- write handle `onException` cleanup
+  case result of
+    Left err -> cleanup >> pure (Left err)
+    Right value -> do
+      (hClose handle >> renameFile temporary path) `onException` cleanup
+      pure (Right value)
 
 cleanupTemporary :: FilePath -> Handle -> IO ()
 cleanupTemporary temporary handle = do
