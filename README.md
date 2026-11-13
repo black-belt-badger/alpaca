@@ -36,6 +36,8 @@ The project is early in development. Its first goal is a small, useful, testable
 | `kirke orders --out PATH` | Save complete, unmodified order JSON privately |
 | `kirke order get ORDER_ID` | Fetch an individual paper order using its server UUID |
 | `kirke order get ORDER_ID --nested --out PATH` | Include nested order legs when supported; save complete private JSON |
+| `kirke order cancel ORDER_ID` | **Offline dry run**; no credentials or cancellation request |
+| `kirke order cancel ORDER_ID --confirm` | Request cancellation of **one paper order**; must check its final status |
 | `kirke crypto bars --symbols BTC/USD --timeframe 1Hour` | Retrieve one bounded page of historical crypto OHLCV bars |
 | `kirke crypto bars --symbols BTC/USD,ETH/USD --timeframe 5Min --max-pages 2 --out PATH` | Follow up to two pages and save the JSON page envelopes privately |
 | `kirke crypto bars --symbols BTC/USD --timeframe 1Min --format jsonl --out PATH` | Save one JSONL record per bar |
@@ -48,7 +50,7 @@ The project is early in development. Its first goal is a small, useful, testable
 
 The summary includes account number, status, currency, cash, equity, buying power, trading-blocked flag, and crypto status. Both statuses are typed account-status enums (not boolean ACTIVE/INACTIVE flags); they retain new Alpaca values safely. The account response decoder now covers all currently documented fields, including typed options-level enums and nullable/optional values. When a summary field is unavailable it displays `not provided`. See the [M3 account coverage notes](docs/api/account.md).
 
-**Not implemented:** live-account access, order submission/cancellation, live streaming, and shell completion. Listing positions does **not** close them or place orders. No trading decisions are made or orders placed.
+**Not implemented:** live-account access, order submission, live streaming, and shell completion. **Order cancellation requires explicit `--confirm`** and is never sent by default. Listing positions does **not** close them or place orders. No trading decisions are made or orders placed.
 
 ## Requirements
 
@@ -276,6 +278,25 @@ A confirmed order can use `--out output/order.json` to save the validated respon
 Supported: crypto pairs, `buy|sell`, `market|limit`, `gtc|ioc` (default `gtc`), one of `--qty` or market-only `--notional`, plus limit-only `--limit-price`. Amounts are positive decimal **strings**, never floating-point; USD-quoted notional is capped at two decimal places. Asset-specific size/price increments and buying power are checked by Alpaca. See [full order submission contract, failure handling and safety rules](docs/api/order-submit.md).
 
 **No live trading**, no stop/bracket/options submissions, no implicit retries, and no orders are placed by tests or the private read-only integration script.
+
+## Cancel a single paper order (explicit opt-in)
+
+The `order cancel` command is an endpoint that can **modify paper account state**. It is deliberately dry-run-first:
+
+```sh
+# No credentials required, no HTTP request made
+stack exec -- kirke order cancel 9275f66a-0a1b-4a22-8c55-167416c7cf14
+
+# Only this explicit flag issues a real DELETE request to the PAPER endpoint:
+stack exec -- kirke order cancel ACTUAL_ORDER_UUID --confirm
+
+# A successful 204 means the request was accepted, not completed:
+stack exec -- kirke order get ACTUAL_ORDER_UUID
+```
+
+Use an **actual server-issued order `id`**, not a `client_order_id`. The shown UUID is synthetic. Kirke validates the canonical UUID before any HTTP interaction and requires `--confirm` to load credentials and send **one** `DELETE https://paper-api.alpaca.markets/v2/orders/{order_id}` request; there are no retries, bulk cancellation, or live-account targets. HTTP `204` means Alpaca **accepted the cancellation request** but the order may still fill or have a pending cancellation; verify status with `order get`. HTTP `404` is not found; `422` means the order is not cancelable; other errors are handled distinctly without leaking provider bodies or credentials. A failed or timed-out DELETE may have an uncertain outcome; inspect the order before deciding whether to retry.
+
+See the [cancel API and safety contract](docs/api/order-cancel.md) for the detailed status matrix. Automated tests and `scripts/cd.sh` use only an offline dry run, **never `--confirm`**.
 
 ## Historical crypto bars (Alpaca market-data API)
 
