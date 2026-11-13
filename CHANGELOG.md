@@ -15,6 +15,7 @@ Release headings are dated only when a release is published.
 - Expand read-only `GET /v2/orders` request coverage to all 11 published filters: typed side and asset classes, timezone-qualified exclusive date bounds, nested multi-leg response selection, and mutually exclusive server-order-UUID cursors. Preserve safe defaults and explicit manual pagination.
 - Complete the shared list-order and order-by-ID response model, including all recognized common and leg-specific fields, nullable multi-leg parent side, typed forward-compatible status/side/type/class/time-in-force/position-intent enums, exact decimal quantity/price and option-leg ratio strings, and validated one-level nested leg objects. Preserve raw private exports.
 - Exercise synthetic Atalanta contract-pack order fixtures offline in Hspec, covering partial fills, notional crypto orders, bracket/multi-leg options, trailing stops, unknown statuses, malformed types and nested data, and concise leg summaries.
+- Complete single order-by-ID M3 fidelity: reuse the shared order decoder and synthetic contract fixtures; reject responses whose primary order UUID does not match the requested UUID, with case-insensitive canonical hex matching and sanitized malformed-payload errors. Preserve distinct 404/401/403/429/5xx diagnostics, paper-only request safety, the current `--nested` flag and original private `--out` bytes. Document request, response and error coverage without prematurely redesigning the CLI.
 
 ## 0.2.0.0 — 2026-11-13
 
