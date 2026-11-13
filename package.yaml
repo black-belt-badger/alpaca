@@ -1,12 +1,12 @@
 name:                kirke
-version:             0.1.0.0
+version:             0.2.0.0
 github:              "black-belt-badger/kirke"
 license:             BSD-3-Clause
 license-file:        LICENSE
 author:              "Marek Dudek"
 maintainer:          "Marek Dudek"
 copyright:           "2026 Marek Dudek"
-synopsis:            Read-only Haskell CLI for Alpaca paper trading accounts and orders
+synopsis:            Read-only Haskell CLI for Alpaca paper state and crypto market data
 category:            Network
 description:         |
   Unofficial Haskell command-line application for Alpaca's paper Trading API.

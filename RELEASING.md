@@ -1,56 +1,44 @@
 # Releasing Kirke (maintainers)
 
-Kirke is an **unofficial** Haskell client and CLI for Alpaca's APIs. The Haskell package and executable are both named `kirke`; provider-specific modules remain under `Alpaca.*`. The first release covers **paper account access only**.
+Kirke is an **unofficial Haskell CLI** for read-only paper Trading API state and historical crypto market data. Its package and executable are both named `kirke`; the Haskell modules remain under `Alpaca.*`.
 
 ## Versioning
 
-- Follow the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
-- Keep the version in `package.yaml` and the Git tag aligned: package `0.1.0.0` -> tag `v0.1.0.0`.
-- Release independently of the Rust [Medea](https://github.com/black-belt-badger/medea) repository, which uses three-part SemVer.
-- Keep a GitHub milestone for each release. No calendar deadline is required.
+- Follow the [Haskell Package Versioning Policy](https://pvp.haskell.org/). Keep `package.yaml` and the release tag aligned (package `0.2.0.0` → tag `v0.2.0.0`).
+- Release independently of Rust [Medea](https://github.com/black-belt-badger/medea), whose version is `0.2.0` under SemVer.
+- Do not rewrite existing published tags. Create a new version for corrections.
 
-## Release checklist
+## Release readiness
 
-1. Finish all issues in the release milestone, including public README, correct package metadata and **confirmed** license/copyright attribution. Do not replace attribution with guesses.
-2. Update `CHANGELOG.md`: move relevant entries from **Unreleased** into a dated heading for the exact package version.
-3. Ensure `main` contains the release contents and the required **Build and test (GHC 9.10.3)** GitHub Actions check is green.
-4. Verify locally from a clean checkout:
+1. Verify the scoped work is reviewed and merged. M2 Account and Trading State is closed; this release also includes historical bars and trades delivered ahead of M4 completion. **Historical quotes remain out of scope.**
+2. Update the package version, generated lockfile where relevant, and the dated `CHANGELOG.md`. Review the version-specific release notes in `docs/releases/v0.2.0.0.md` for accuracy and limitations.
+3. Ensure `main` is clean and the required **Build and test (GHC 9.10.3)** GitHub Actions check succeeds on the **exact** commit to be tagged.
+4. Verify on a trusted development system:
 
    ```sh
    stack build
    stack test
-   ```
-
-5. Run the paper-only integration check explicitly on a trusted machine with private local credentials:
-
-   ```sh
    ./scripts/it.sh
    ```
 
-   Never put Alpaca credentials, full account JSON, or integration output into CI logs or release assets. CI intentionally uses offline tests only.
-6. Review public docs and release notes: state limitations, supported toolchain, unofficial status and lack of live trading or order placement.
+   The integration script exercises paper account, positions, assets, orders, and bounded crypto bars/trades. It sources local secrets; **never publish credentials or account/data responses**.
+5. Confirm public docs, copyright and license, supported toolchain, privacy of exported JSON, and the unofficial/non-trading limitations. GitHub supplies source archives; no Hackage package or compiled binaries are published by this procedure.
 
-## Create a tag and GitHub Release
-
-After the release-readiness changes are merged, from a clean working tree:
+## Tag and publish after the release-preparation PR is merged
 
 ```sh
 git switch main
 git pull --ff-only origin main
 git status --short
-git tag -a v0.1.0.0 -m "Kirke v0.1.0.0"
-git push origin v0.1.0.0
+git tag -a v0.2.0.0 -m "Kirke v0.2.0.0"
+git push origin v0.2.0.0
 
-gh release create v0.1.0.0 \
+gh release create v0.2.0.0 \
   --repo black-belt-badger/kirke \
   --verify-tag \
-  --title "Kirke v0.1.0.0" \
-  --generate-notes \
+  --title "Kirke v0.2.0.0" \
+  --notes-file docs/releases/v0.2.0.0.md \
   --prerelease
 ```
 
-These are **example commands for the first release**: adjust the version and verify the release checklist before executing them. Review generated release notes and clearly explain the paper-only scope. GitHub automatically provides source archives; compiled binaries are optional future work.
-
-Finally, verify the tag and release, close the corresponding milestone, and confirm Project #7 reflects completed release tasks.
-
-Do not rewrite published release tags; ship a new version for fixes.
+**Do not tag a release branch or open PR commit.** Tag only the exact tested `main` revision after the release PR is merged and post-merge CI is green. Verify the tag/release URL and that its notes match the source. Future changes belong in a new release; do not amend published tags.
