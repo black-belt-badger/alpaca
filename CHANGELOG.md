@@ -11,6 +11,7 @@ Release headings are dated only when a release is published.
 - Model both `account.status` and optional `account.crypto_status` as a shared, forward-compatible `AccountStatus` enum; unknown future strings round-trip without changing CLI summaries or raw account JSON exports.
 - Decode every documented `GET /v2/account` response field with strict wire types, including both options-level integer enums. Only `id` and `status` are required; null/absent optional values render as `not provided` without losing the complete original JSON for `--out`.
 - Complete `GET /v2/assets` fidelity: all ten asset classes, `--exchange` and `--attributes` CSV filters, equity/index exchange restrictions, and all 19 documented response properties with typed known/future enum values and exact numeric handling. Preserve Kirke's crypto default, concise summary, and original private JSON exports.
+- Complete `GET /v2/positions` decoding for all 22 published response properties, including 17 required values, exact quantities/prices, the optional nested 10-field USD object for local currency trading, and typed class/venue/side enums. Support the documented empty exchange while preserving concise summaries and private full JSON output.
 
 ## 0.2.0.0 — 2026-11-13
 

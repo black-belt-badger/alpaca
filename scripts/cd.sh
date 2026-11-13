@@ -38,6 +38,8 @@ test "$(stat -c '%a' ./output/account.json)" = 600
 test -s ./output/positions-summary.txt
 grep -q '^Kirke — Alpaca paper positions$' ./output/positions-summary.txt
 jq -e 'type == "array"' ./output/positions.json > /dev/null
+# Required M3 positions fields must retain their documented wire types.
+jq -e 'type == "array" and all(.[]; (.asset_id|type) == "string" and (.asset_class|type) == "string" and (.exchange|type) == "string" and (.qty|type) == "string" and (.market_value|type) == "string" and (.asset_marginable|type) == "boolean" and (.side|type) == "string")' ./output/positions.json > /dev/null
 test "$(stat -c '%a' ./output/positions.json)" = 600
 test "$(stat -c '%a' ./output/positions-summary.txt)" = 600
 

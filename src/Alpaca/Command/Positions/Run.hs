@@ -8,10 +8,10 @@ module Alpaca.Command.Positions.Run
 import Alpaca.Client (alpacaErrorMessage, fetchPositions)
 import Alpaca.Command.Positions (PositionsCommand (..))
 import Alpaca.Credentials (credentialErrorMessage, loadCredentials)
-import Alpaca.Domain.Position (Position (..), decodePositions)
+import Alpaca.Domain.Asset (assetKindValue)
+import Alpaca.Domain.Position (Position (..), decodePositions, positionSideValue)
 import Alpaca.Output (savePrivateJson)
 import Control.Exception (IOException, displayException, try)
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as TextIO
@@ -42,11 +42,9 @@ renderPositionsSummary positions =
 
 renderPosition :: Position -> [Text]
 renderPosition position =
-  [ positionSymbol position <> " (" <> positionAssetClass position <> ", " <> positionSide position <> ")"
+  [ positionSymbol position <> " (" <> assetKindValue (positionAssetClass position) <> ", " <> positionSideValue (positionSide position) <> ")"
   , "  Quantity: " <> positionQty position
-  , "  Market value: " <> present (positionMarketValue position)
-  , "  Current price: " <> present (positionCurrentPrice position)
-  , "  Unrealized P/L: " <> present (positionUnrealizedPl position)
+  , "  Market value: " <> positionMarketValue position
+  , "  Current price: " <> positionCurrentPrice position
+  , "  Unrealized P/L: " <> positionUnrealizedPl position
   ]
-  where
-    present = fromMaybe "not provided"
