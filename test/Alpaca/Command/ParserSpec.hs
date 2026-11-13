@@ -14,6 +14,7 @@ import Alpaca.Command.Crypto.Bars
   , parseTimeframe
   )
 import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
+import Alpaca.Command.Crypto.Quotes (CryptoQuotesCommand (..))
 import Alpaca.Command.Order (OrderCommand (..), OrderGetCommand (..), parseOrderId)
 import Alpaca.Command.Orders
   ( OrderDirection (..), OrderStatus (..), OrdersCommand (..)
@@ -261,6 +262,34 @@ spec = do
       [["--limit", "10001"], ["--limit", "0"], ["--max-pages", "21"],
        ["--timeframe", "1Min"], ["--location", "hostile"],
        ["--symbols", "BTC/USD,,ETH/USD"], ["--start", "yesterday"],
+       ["--format", "csv"], ["--sort", "random"], ["--page-token", ""],
+       ["--out"], ["--unknown"]]
+
+  it "parses crypto quotes with matching safe Trades defaults" $
+    parse ["crypto", "quotes", "--symbols", "BTC/USD,ETH/USD"]
+      `shouldBe` Just (CryptoQuotes (CryptoQuotesCommand
+        ["BTC/USD", "ETH/USD"] Us Nothing Nothing 1000 BarsAsc 1 Nothing BarsJson Nothing))
+
+  it "parses every historical quotes option, including JSONL and page token" $ do
+    let start = either error id (parseInstant "2026-10-02T00:00:00.123456789Z")
+        end = either error id (parseInstant "2026-10-02T02:00:00Z")
+    parse ["crypto", "quotes", "--symbols", "SOL/USD", "--location", "us-1",
+           "--start", "2026-10-02T00:00:00.123456789Z", "--end", "2026-10-02T02:00:00Z",
+           "--limit", "10000", "--sort", "desc", "--max-pages", "20",
+           "--page-token", "ABC+/==", "--format", "jsonl", "--out", "quotes.jsonl"]
+      `shouldBe` Just (CryptoQuotes (CryptoQuotesCommand
+        ["SOL/USD"] Us1 (Just start) (Just end) 10000 BarsDesc 20
+        (Just "ABC+/==") BarsJsonl (Just "quotes.jsonl")))
+
+  it "rejects invalid quote filters, unsupported timeframe and missing required symbols" $ do
+    let base = ["crypto", "quotes"]
+    parse base `shouldBe` Nothing
+    mapM_ (\flags -> parse (base <> ["--symbols", "BTC/USD"] <> flags)
+      `shouldBe` Nothing)
+      [["--limit", "10001"], ["--limit", "0"], ["--max-pages", "0"],
+       ["--max-pages", "21"], ["--timeframe", "1Min"],
+       ["--location", "hostile"], ["--symbols", "BTC/USD,,ETH/USD"],
+       ["--start", "yesterday"], ["--end", "wrong"],
        ["--format", "csv"], ["--sort", "random"], ["--page-token", ""],
        ["--out"], ["--unknown"]]
 

@@ -8,6 +8,7 @@ import Alpaca.Client
   , assetsRequest
   , cryptoBarsRequest
   , cryptoTradesRequest
+  , cryptoQuotesRequest
   , ordersRequest
   , orderRequest
   , positionsRequest
@@ -26,6 +27,7 @@ import Alpaca.Command.Crypto.Bars
   , parseTimeframe
   )
 import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
+import Alpaca.Command.Crypto.Quotes (CryptoQuotesCommand (..))
 import Alpaca.Command.Order (OrderGetCommand (..), parseOrderId)
 import Alpaca.Command.Orders
   ( OrderDirection (..), OrderStatus (..), OrdersCommand (..)
@@ -204,6 +206,31 @@ spec = do
     queryString trades `shouldBe`
       "?symbols=SOL%2FUSD&limit=10000&sort=desc&page_token=ABC%2B%2F%3D%3D"
     requestHeaders trades `shouldBe` requestHeaders request
+
+  it "builds authenticated read-only quotes requests with all documented parameters" $ do
+    let start = either error id (parseInstant "2026-10-02T00:00:00.123456789Z")
+        end = either error id (parseInstant "2026-10-02T02:00:00Z")
+        options = CryptoQuotesCommand ["BTC/USD", "ETH/USD"] Us
+          (Just start) (Just end) 25 BarsAsc 2 Nothing BarsJson Nothing
+        quotes = cryptoQuotesRequest credentials options Nothing
+    method quotes `shouldBe` "GET"
+    secure quotes `shouldBe` True
+    host quotes `shouldBe` "data.alpaca.markets"
+    port quotes `shouldBe` 443
+    path quotes `shouldBe` "/v1beta3/crypto/us/quotes"
+    redirectCount quotes `shouldBe` 0
+    requestHeaders quotes `shouldBe` requestHeaders request
+    queryString quotes `shouldBe`
+      "?symbols=BTC%2FUSD%2CETH%2FUSD&start=2026-10-02T00%3A00%3A00.123456789Z&end=2026-10-02T02%3A00%3A00Z&limit=25&sort=asc"
+
+  it "encodes quotes continuation tokens and safe locations without a timeframe" $ do
+    let options = CryptoQuotesCommand ["SOL/USD"] Eu1
+          Nothing Nothing 10000 BarsDesc 3 Nothing BarsJson Nothing
+        quotes = cryptoQuotesRequest credentials options (Just "ABC+/==")
+    path quotes `shouldBe` "/v1beta3/crypto/eu-1/quotes"
+    queryString quotes `shouldBe`
+      "?symbols=SOL%2FUSD&limit=10000&sort=desc&page_token=ABC%2B%2F%3D%3D"
+    requestHeaders quotes `shouldBe` requestHeaders request
 
   it "builds authenticated historical bars requests to the market-data host" $ do
     let timeframe = either error id (parseTimeframe "1Hour")
