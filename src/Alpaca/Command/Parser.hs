@@ -27,7 +27,11 @@ import Alpaca.Command.Assets
   )
 import Alpaca.Command (Command (..))
 import Alpaca.Command.Order (OrderCommand (..), OrderGetCommand (..), parseOrderId)
-import Alpaca.Command.Orders (OrderDirection (Desc), OrderStatus (OrdersOpen), OrdersCommand (..), parseOrderStatus, parseOrderDirection, parseOrderLimit, parseOrderSymbols)
+import Alpaca.Command.Orders
+  ( OrderDirection (Desc), OrderStatus (OrdersOpen), OrdersCommand (..)
+  , parseOrderStatus, parseOrderDirection, parseOrderLimit, parseOrderSymbols
+  , parseOrderSide, parseOrderAssetClasses, parseOrderTimestamp
+  )
 import Alpaca.Command.Positions (PositionsCommand (..))
 import Options.Applicative
   ( Parser
@@ -198,6 +202,19 @@ ordersParser =
     <*> option (eitherReader parseOrderDirection)
       (long "direction" <> metavar "DIRECTION" <> value Desc <> help "asc or desc (default)")
     <*> outputParser
+    <*> optional (option (eitherReader parseOrderTimestamp)
+      (long "after" <> metavar "RFC3339" <> help "Exclusive submitted-at lower bound"))
+    <*> optional (option (eitherReader parseOrderTimestamp)
+      (long "until" <> metavar "RFC3339" <> help "Exclusive submitted-at upper bound"))
+    <*> switch (long "nested" <> help "Roll up multi-leg orders in legs")
+    <*> optional (option (eitherReader parseOrderSide)
+      (long "side" <> metavar "SIDE" <> help "buy or sell"))
+    <*> optional (option (eitherReader parseOrderAssetClasses)
+      (long "asset-class" <> metavar "CLASSES" <> help "Comma-separated asset classes, or all"))
+    <*> optional (option (eitherReader parseOrderId)
+      (long "before-order-id" <> metavar "UUID" <> help "Orders before this UUID (exclusive); not with date bounds"))
+    <*> optional (option (eitherReader parseOrderId)
+      (long "after-order-id" <> metavar "UUID" <> help "Orders after this UUID (exclusive); not with date bounds"))
 
 outputParser :: Parser (Maybe FilePath)
 outputParser =

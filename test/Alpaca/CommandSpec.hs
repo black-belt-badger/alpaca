@@ -28,7 +28,7 @@ spec = do
     assets == Positions (PositionsCommand Nothing) `shouldBe` False
 
   it "distinguishes order listing from other commands" $ do
-    let orders = Orders (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing)
+    let orders = Orders (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing Nothing Nothing False Nothing Nothing Nothing Nothing)
     orders == Account (AccountCommand Nothing) `shouldBe` False
     orders == Assets (AssetsCommand Crypto Nothing Nothing Nothing Nothing) `shouldBe` False
     orders == Positions (PositionsCommand Nothing) `shouldBe` False
@@ -36,7 +36,7 @@ spec = do
   it "distinguishes single order get from listing" $ do
     let orderId = either error id (parseOrderId "9275f66a-0a1b-4a22-8c55-167416c7cf14")
         order = Order (GetOrder (OrderGetCommand orderId False Nothing))
-    order == Orders (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing) `shouldBe` False
+    order == Orders (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing Nothing Nothing False Nothing Nothing Nothing Nothing) `shouldBe` False
 
   it "distinguishes different account command options" $
     (Account (AccountCommand Nothing) == Account (AccountCommand (Just "account.json")))

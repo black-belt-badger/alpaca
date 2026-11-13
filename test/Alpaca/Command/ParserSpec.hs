@@ -15,7 +15,10 @@ import Alpaca.Command.Crypto.Bars
   )
 import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
 import Alpaca.Command.Order (OrderCommand (..), OrderGetCommand (..), parseOrderId)
-import Alpaca.Command.Orders (OrderDirection (..), OrderStatus (..), OrdersCommand (..))
+import Alpaca.Command.Orders
+  ( OrderDirection (..), OrderStatus (..), OrdersCommand (..)
+  , OrderSideFilter (..), OrderAssetClass (..)
+  )
 import Alpaca.Command.Positions (PositionsCommand (..))
 import Alpaca.Command (Command (..))
 import Alpaca.Command.Parser (commandParserInfo)
@@ -104,15 +107,15 @@ spec = do
     parse ["assets", "--unexpected"] `shouldBe` Nothing
 
   it "defaults order listing to open, descending, API-default limit" $
-    parse ["orders"] `shouldBe` Just (Orders (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing))
+    parse ["orders"] `shouldBe` Just (Orders (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing Nothing Nothing False Nothing Nothing Nothing Nothing))
 
   it "parses all order filters and original JSON output" $
     parse ["orders", "--status", "all", "--limit", "500", "--symbols", "BTCUSD, ETHUSD,AAPL", "--direction", "asc", "--out", "orders.json"]
-      `shouldBe` Just (Orders (OrdersCommand OrdersAll (Just 500) (Just ["BTCUSD", "ETHUSD", "AAPL"]) Asc (Just "orders.json")))
+      `shouldBe` Just (Orders (OrdersCommand OrdersAll (Just 500) (Just ["BTCUSD", "ETHUSD", "AAPL"]) Asc (Just "orders.json") Nothing Nothing False Nothing Nothing Nothing Nothing))
 
   it "parses closed orders and a smaller limit" $
     parse ["orders", "--status", "closed", "--limit", "20"]
-      `shouldBe` Just (Orders (OrdersCommand OrdersClosed (Just 20) Nothing Desc Nothing))
+      `shouldBe` Just (Orders (OrdersCommand OrdersClosed (Just 20) Nothing Desc Nothing Nothing Nothing False Nothing Nothing Nothing Nothing))
 
   it "rejects unsupported status, direction, or symbols" $ do
     parse ["orders", "--status", "filled"] `shouldBe` Nothing
@@ -128,6 +131,51 @@ spec = do
   it "rejects missing order option values" $ do
     mapM_ (\flag -> parse ["orders", flag] `shouldBe` Nothing)
       ["--limit", "--status", "--symbols", "--direction", "--out"]
+
+
+  it "parses all eleven provider order filters together" $ do
+    let after = either error id (parseInstant "2026-11-12T00:00:00.123456789Z")
+        until = either error id (parseInstant "2026-11-12T04:00:00+01:00")
+    parse
+      [ "orders", "--status", "all", "--limit", "500"
+      , "--symbols", "BTCUSD,AAPL", "--direction", "asc"
+      , "--after", "2026-11-12T00:00:00.123456789Z"
+      , "--until", "2026-11-12T04:00:00+01:00"
+      , "--nested", "--side", "buy", "--asset-class", "us_equity,crypto"
+      , "--out", "orders.json"
+      ]
+      `shouldBe` Just (Orders (OrdersCommand OrdersAll (Just 500)
+        (Just ["BTCUSD", "AAPL"]) Asc (Just "orders.json")
+        (Just after) (Just until) True (Just Buy)
+        (Just [OrderAssetClass UsEquity, OrderAssetClass Crypto]) Nothing Nothing))
+
+  it "parses before-order-id and after-order-id UUID anchors separately" $ do
+    let uuid = "9275f66a-0a1b-4a22-8c55-167416c7cf14"
+        cursor = either error id (parseOrderId uuid)
+        defaultOptions = OrdersCommand OrdersOpen Nothing Nothing Desc Nothing
+          Nothing Nothing False Nothing Nothing Nothing Nothing
+    parse ["orders", "--before-order-id", uuid]
+      `shouldBe` Just (Orders (defaultOptions { ordersBeforeOrderId = Just cursor }))
+    parse ["orders", "--after-order-id", uuid]
+      `shouldBe` Just (Orders (defaultOptions { ordersAfterOrderId = Just cursor }))
+
+  it "parses one nested, side, and special all-classes filter" $
+    parse ["orders", "--nested", "--side", "sell", "--asset-class", "all"]
+      `shouldBe` Just (Orders (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing
+        Nothing Nothing True (Just Sell) (Just [OrderAllClasses]) Nothing Nothing))
+
+  it "rejects malformed or unknown new order options while parsing" $ do
+    mapM_ (\(flag, argument) -> parse ["orders", flag, argument] `shouldBe` Nothing)
+      [ ("--after", "yesterday"), ("--after", "2026-11-12")
+      , ("--until", "2026-11-12T12:30:00")
+      , ("--side", "BUY"), ("--side", "both")
+      , ("--asset-class", "crypto,crypto"), ("--asset-class", "all,crypto")
+      , ("--asset-class", "BTCUSD")
+      , ("--before-order-id", "not-a-uuid"), ("--after-order-id", "../positions")
+      ]
+    mapM_ (\flag -> parse ["orders", flag] `shouldBe` Nothing)
+      [ "--after", "--until", "--side", "--asset-class"
+      , "--before-order-id", "--after-order-id" ]
 
   it "parses a single order lookup by UUID" $ do
     let uuid = "9275f66a-0a1b-4a22-8c55-167416c7cf14"

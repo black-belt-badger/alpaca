@@ -7,7 +7,7 @@ module Alpaca.Command.Orders.Run
   ) where
 
 import Alpaca.Client (alpacaErrorMessage, fetchOrders)
-import Alpaca.Command.Orders (OrdersCommand (..))
+import Alpaca.Command.Orders (OrdersCommand (..), validateOrdersCommand)
 import Alpaca.Credentials (credentialErrorMessage, loadCredentials)
 import Alpaca.Domain.Order (Order (..), decodeOrders)
 import Alpaca.Output (savePrivateJson)
@@ -18,7 +18,8 @@ import qualified Data.Text.IO as TextIO
 import System.Exit (die)
 
 runOrders :: OrdersCommand -> IO ()
-runOrders options = do
+runOrders uncheckedOptions = do
+  options <- either die pure (validateOrdersCommand uncheckedOptions)
   credentials <- loadCredentials >>= either (die . credentialErrorMessage) pure
   response <- fetchOrders credentials options
     >>= either (die . alpacaErrorMessage) pure

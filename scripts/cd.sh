@@ -28,6 +28,9 @@ kirke assets --asset-class us_equity --exchange NASDAQ --attributes has_options 
 kirke orders --help > /dev/null
 kirke orders --status all --limit 10 > ./output/orders-summary.txt
 kirke orders --status all --limit 10 --out ./output/orders.json > ./output/orders-written.txt
+# M3: exercise the documented side, multi-class and nested request filters.
+kirke orders --status all --limit 10 --side buy --asset-class crypto --nested \
+  --out ./output/orders-filtered.json > ./output/orders-filtered-written.txt
 
 test -s ./output/account-summary.txt
 grep -q '^Kirke — Alpaca paper account$' ./output/account-summary.txt
@@ -56,6 +59,8 @@ grep -q '^Kirke — Alpaca paper orders$' ./output/orders-summary.txt
 jq -e 'type == "array" and (length <= 10) and all(.[]; .id and .client_order_id and .symbol and .status)' ./output/orders.json > /dev/null
 test "$(stat -c '%a' ./output/orders.json)" = 600
 test "$(stat -c '%a' ./output/orders-summary.txt)" = 600
+jq -e 'type == "array" and (length <= 10) and all(.[]; .side == "buy" and .asset_class == "crypto")' ./output/orders-filtered.json > /dev/null
+test "$(stat -c '%a' ./output/orders-filtered.json)" = 600
 
 # A fresh paper account can legitimately have zero orders. When a previous
 # order exists, use its server-issued ID to exercise the single-order endpoint.

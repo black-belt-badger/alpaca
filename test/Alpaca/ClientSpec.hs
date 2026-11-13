@@ -27,7 +27,10 @@ import Alpaca.Command.Crypto.Bars
   )
 import Alpaca.Command.Crypto.Trades (CryptoTradesCommand (..))
 import Alpaca.Command.Order (OrderGetCommand (..), parseOrderId)
-import Alpaca.Command.Orders (OrderDirection (..), OrderStatus (..), OrdersCommand (..))
+import Alpaca.Command.Orders
+  ( OrderDirection (..), OrderStatus (..), OrdersCommand (..)
+  , OrderSideFilter (..), OrderAssetClass (..)
+  )
 import Alpaca.Credentials (Credentials (..))
 import Network.HTTP.Client (Request (..))
 import Test.Hspec (Spec, it, shouldBe)
@@ -101,7 +104,7 @@ spec = do
     queryString assets `shouldBe` "?asset_class=crypto&attributes=overnight_tradable"
 
   it "requests open orders from the paper endpoint with safe defaults" $ do
-    let orders = ordersRequest credentials (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing)
+    let orders = ordersRequest credentials (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing Nothing Nothing False Nothing Nothing Nothing Nothing)
     method orders `shouldBe` "GET"
     secure orders `shouldBe` True
     host orders `shouldBe` "paper-api.alpaca.markets"
@@ -112,8 +115,48 @@ spec = do
     requestHeaders orders `shouldBe` requestHeaders request
 
   it "encodes filtered orders, including multiple symbols and sort direction" $ do
-    let orders = ordersRequest credentials (OrdersCommand OrdersAll (Just 500) (Just ["BTCUSD", "AAPL"]) Asc Nothing)
+    let orders = ordersRequest credentials (OrdersCommand OrdersAll (Just 500) (Just ["BTCUSD", "AAPL"]) Asc Nothing Nothing Nothing False Nothing Nothing Nothing Nothing)
     queryString orders `shouldBe` "?status=all&limit=500&symbols=BTCUSD%2CAAPL&direction=asc"
+
+
+  it "serializes every new order filter with original timestamp precision" $ do
+    let start = either error id (parseInstant "2026-11-12T00:00:00.123456789Z")
+        endBound = either error id (parseInstant "2026-11-12T04:00:00+01:00")
+        options = OrdersCommand OrdersAll (Just 500) (Just ["BTCUSD", "AAPL"]) Asc Nothing
+          (Just start) (Just endBound) True (Just Buy)
+          (Just [OrderAssetClass UsEquity, OrderAssetClass Crypto]) Nothing Nothing
+        orders = ordersRequest credentials options
+    method orders `shouldBe` "GET"
+    secure orders `shouldBe` True
+    host orders `shouldBe` "paper-api.alpaca.markets"
+    path orders `shouldBe` "/v2/orders"
+    queryString orders `shouldBe`
+      "?status=all&limit=500&symbols=BTCUSD%2CAAPL&direction=asc&after=2026-11-12T00%3A00%3A00.123456789Z&until=2026-11-12T04%3A00%3A00%2B01%3A00&nested=true&side=buy&asset_class=us_equity%2Ccrypto"
+    redirectCount orders `shouldBe` 0
+    requestHeaders orders `shouldBe` requestHeaders request
+
+  it "uses before_order_id only when supplied without inventing page tokens" $ do
+    let uuid = either error id (parseOrderId "9275f66a-0a1b-4a22-8c55-167416c7cf14")
+        options = (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing
+          Nothing Nothing False Nothing Nothing Nothing Nothing)
+          { ordersBeforeOrderId = Just uuid }
+        orders = ordersRequest credentials options
+    queryString orders `shouldBe`
+      "?status=open&direction=desc&before_order_id=9275f66a-0a1b-4a22-8c55-167416c7cf14"
+
+  it "serializes the after_order_id alternative and optional special all class" $ do
+    let uuid = either error id (parseOrderId "9275f66a-0a1b-4a22-8c55-167416c7cf14")
+        options = (OrdersCommand OrdersClosed (Just 1) Nothing Desc Nothing
+          Nothing Nothing False Nothing (Just [OrderAllClasses]) Nothing Nothing)
+          { ordersAfterOrderId = Just uuid }
+        orders = ordersRequest credentials options
+    queryString orders `shouldBe`
+      "?status=closed&limit=1&direction=desc&asset_class=all&after_order_id=9275f66a-0a1b-4a22-8c55-167416c7cf14"
+
+  it "omits optional filters when none was requested" $
+    queryString (ordersRequest credentials (OrdersCommand OrdersOpen Nothing Nothing Desc Nothing
+      Nothing Nothing False Nothing Nothing Nothing Nothing))
+      `shouldBe` "?status=open&direction=desc"
 
   it "uses a validated UUID to fetch a single paper order, without query by default" $ do
     let uuid = "9275f66a-0a1b-4a22-8c55-167416c7cf14"
