@@ -5,6 +5,8 @@ module Alpaca.Client
   , fetchAccount
   , fetchPositions
   , fetchAssets
+  , fetchCryptoBarsPage
+  , cryptoBarsRequest
   , fetchOrders
   , fetchOrder
   , orderRequest
@@ -21,9 +23,17 @@ import Control.Exception (try)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as Char8
 import Data.List (intercalate)
+import qualified Data.Text as Text
 import qualified Data.ByteString.Lazy as Lazy
 import Data.Text.Encoding (encodeUtf8)
 import Alpaca.Command.Assets (AssetClass, AssetStatus, assetClassParameter, assetStatusParameter)
+import Alpaca.Command.Crypto.Bars
+  ( CryptoBarsCommand (..)
+  , instantParameter
+  , locationParameter
+  , sortParameter
+  , timeframeParameter
+  )
 import Alpaca.Command.Order (OrderGetCommand (..), orderIdSegment)
 import Alpaca.Credentials (Credentials (..))
 import Alpaca.Command.Orders (OrdersCommand (..), orderStatusParameter, orderDirectionParameter)
@@ -50,27 +60,34 @@ data AlpacaError
 
 -- | Retrieve the complete, unmodified JSON response from the paper trading API.
 fetchAccount :: Credentials -> IO (Either AlpacaError ByteString)
-fetchAccount = fetchPaper . accountRequest
+fetchAccount = fetchAuthenticated . accountRequest
 
 -- | Retrieve open positions from the same authenticated paper Trading API.
 fetchPositions :: Credentials -> IO (Either AlpacaError ByteString)
-fetchPositions = fetchPaper . positionsRequest
+fetchPositions = fetchAuthenticated . positionsRequest
 
 -- | Asset class is explicitly supplied, since Alpaca defaults to equities.
 fetchAssets :: Credentials -> AssetClass -> Maybe AssetStatus -> IO (Either AlpacaError ByteString)
 fetchAssets credentials assetClass status =
-  fetchPaper (assetsRequest credentials assetClass status)
+  fetchAuthenticated (assetsRequest credentials assetClass status)
 
 -- | GET orders is read-only; all query values are typed or CLI-validated.
 fetchOrders :: Credentials -> OrdersCommand -> IO (Either AlpacaError ByteString)
-fetchOrders credentials = fetchPaper . ordersRequest credentials
+fetchOrders credentials = fetchAuthenticated . ordersRequest credentials
 
 -- | Fetch a single paper order by its server-issued UUID.
 fetchOrder :: Credentials -> OrderGetCommand -> IO (Either AlpacaError ByteString)
-fetchOrder credentials = fetchPaper . orderRequest credentials
+fetchOrder credentials = fetchAuthenticated . orderRequest credentials
 
-fetchPaper :: Request -> IO (Either AlpacaError ByteString)
-fetchPaper request = do
+-- | All endpoints use the same protected HTTPS transport; the URL specifies
+-- either the trading (paper) API or the read-only market-data API.
+fetchCryptoBarsPage
+  :: Credentials -> CryptoBarsCommand -> Maybe Text.Text -> IO (Either AlpacaError ByteString)
+fetchCryptoBarsPage credentials options token =
+  fetchAuthenticated (cryptoBarsRequest credentials options token)
+
+fetchAuthenticated :: Request -> IO (Either AlpacaError ByteString)
+fetchAuthenticated request = do
   result <-
     try (newManager tlsManagerSettings >>= httpLbs request)
       :: IO (Either HttpException (Response Lazy.ByteString))
@@ -116,9 +133,32 @@ orderRequest credentials options =
     (if getOrderNested options then [("nested", Just "true")] else [])
     (paperRequest credentials ("/v2/orders/" <> orderIdSegment (getOrderId options)))
 
+-- | Use allowlisted crypto location and query serialization, never a
+-- user-controlled URL; page tokens are opaque and percent-encoded.
+cryptoBarsRequest :: Credentials -> CryptoBarsCommand -> Maybe Text.Text -> Request
+cryptoBarsRequest credentials options token =
+  setQueryString
+    ( [ ("symbols", Just (encodeUtf8 (Text.intercalate "," (cryptoBarsSymbols options))))
+      , ("timeframe", Just (encodeUtf8 (timeframeParameter (cryptoBarsTimeframe options))))
+      ]
+        <> maybe [] (\start -> [("start", Just (encodeUtf8 (instantParameter start)))]) (cryptoBarsStart options)
+        <> maybe [] (\end -> [("end", Just (encodeUtf8 (instantParameter end)))]) (cryptoBarsEnd options)
+        <> [ ("limit", Just (Char8.pack (show (cryptoBarsLimit options))))
+           , ("sort", Just (encodeUtf8 (sortParameter (cryptoBarsSort options))))
+           ]
+        <> maybe [] (\t -> [("page_token", Just (encodeUtf8 t))]) token
+    )
+    (authenticatedRequest credentials
+      ("https://data.alpaca.markets/v1beta3/crypto/" <>
+        locationParameter (cryptoBarsLocation options) <> "/bars"))
+
 paperRequest :: Credentials -> String -> Request
 paperRequest credentials endpoint =
-  (parseRequest_ ("https://paper-api.alpaca.markets" <> endpoint))
+  authenticatedRequest credentials ("https://paper-api.alpaca.markets" <> endpoint)
+
+authenticatedRequest :: Credentials -> String -> Request
+authenticatedRequest credentials url =
+  (parseRequest_ url)
     { method = "GET"
     , requestHeaders =
         [ ("APCA-API-KEY-ID", encodeUtf8 (apiKeyId credentials))

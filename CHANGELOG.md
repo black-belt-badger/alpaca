@@ -8,6 +8,8 @@ Release headings are dated only when a release is published.
 ## Unreleased
 
 ### Added
+- `kirke crypto bars` fetches authenticated historical crypto OHLCV bars with explicit symbols, location, timeframe, date bounds, page size, sorting and bounded token-based pagination.
+- Typed, lossless-decimal Scientific bars, nanosecond timestamp strings, complete JSON page-envelope export, JSONL bar records, private output and offline/live integration tests.
 - `kirke order get ORDER_ID` fetches one paper order using a validated UUID, with optional `--nested` and private `--out PATH` for complete JSON.
 - The single-order command shares the typed order decoder and display fields, distinguishes HTTP 404 from authentication/transport failures, and has offline and paper API tests.
 - `kirke orders` lists paper orders with typed status, limit, symbols and direction filters, maintaining exact decimal-string financial values.

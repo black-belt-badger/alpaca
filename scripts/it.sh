@@ -66,4 +66,21 @@ else
   echo 'Kirke: no paper orders available; skipping single-order API check'
 fi
 
-echo "Kirke: Alpaca paper API integration checks passed"
+kirke crypto --help > /dev/null
+kirke crypto bars --help > /dev/null
+# A bounded historical sample: 2 symbols, at most two pages of two bars each.
+crypto_flags=(--symbols BTC/USD,ETH/USD --timeframe 1Hour \
+  --start 2026-10-02T00:00:00Z --end 2026-10-02T03:00:00Z \
+  --limit 2 --max-pages 2)
+kirke crypto bars "${crypto_flags[@]}" > ./output/crypto-bars-summary.txt
+kirke crypto bars "${crypto_flags[@]}" --out ./output/crypto-bars.json > ./output/crypto-bars-written.txt
+kirke crypto bars "${crypto_flags[@]}" --format jsonl --out ./output/crypto-bars.jsonl > ./output/crypto-bars-jsonl-written.txt
+grep -q '^Kirke — Alpaca historical crypto bars$' ./output/crypto-bars-summary.txt
+jq -e '(.pages | type == "array" and length >= 1 and length <= 2) and (.next_page_token == null or (.next_page_token | type == "string"))' ./output/crypto-bars.json > /dev/null
+jq -e 'all(.pages[]; (.bars | type == "object"))' ./output/crypto-bars.json > /dev/null
+test "$(stat -c '%a' ./output/crypto-bars.json)" = 600
+test "$(stat -c '%a' ./output/crypto-bars.jsonl)" = 600
+test -s ./output/crypto-bars.jsonl
+jq -e -c '.symbol and .t and (.o | type == "number") and (.v | type == "number")' ./output/crypto-bars.jsonl > /dev/null
+
+echo "Kirke: Alpaca paper and crypto market-data API integration checks passed"

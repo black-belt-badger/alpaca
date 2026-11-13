@@ -6,6 +6,7 @@ import Alpaca.Client
   ( AlpacaError (..)
   , accountRequest
   , assetsRequest
+  , cryptoBarsRequest
   , ordersRequest
   , orderRequest
   , positionsRequest
@@ -14,6 +15,14 @@ import Alpaca.Client
   , interpretAccountResponse
   )
 import Alpaca.Command.Assets (AssetClass (..), AssetStatus (..))
+import Alpaca.Command.Crypto.Bars
+  ( BarsFormat (BarsJson)
+  , BarsSort (BarsAsc, BarsDesc)
+  , CryptoBarsCommand (..)
+  , CryptoLocation (Us, Eu1)
+  , parseInstant
+  , parseTimeframe
+  )
 import Alpaca.Command.Order (OrderGetCommand (..), parseOrderId)
 import Alpaca.Command.Orders (OrderDirection (..), OrderStatus (..), OrdersCommand (..))
 import Alpaca.Credentials (Credentials (..))
@@ -100,6 +109,32 @@ spec = do
   it "distinguishes HTTP 404 from 401 without exposing provider body" $ do
     interpretPaperResponse 404 "private provider error" `shouldBe` Left (UnexpectedStatus 404)
     interpretPaperResponse 401 "private provider error" `shouldBe` Left (UnexpectedStatus 401)
+
+  it "builds authenticated historical bars requests to the market-data host" $ do
+    let timeframe = either error id (parseTimeframe "1Hour")
+        start = either error id (parseInstant "2026-10-02T00:00:00.123456789Z")
+        end = either error id (parseInstant "2026-10-02T02:00:00Z")
+        options = CryptoBarsCommand ["BTC/USD", "ETH/USD"] Us timeframe
+          (Just start) (Just end) 25 BarsAsc 2 Nothing BarsJson Nothing
+        bars = cryptoBarsRequest credentials options Nothing
+    method bars `shouldBe` "GET"
+    secure bars `shouldBe` True
+    host bars `shouldBe` "data.alpaca.markets"
+    port bars `shouldBe` 443
+    path bars `shouldBe` "/v1beta3/crypto/us/bars"
+    redirectCount bars `shouldBe` 0
+    requestHeaders bars `shouldBe` requestHeaders request
+    queryString bars `shouldBe`
+      "?symbols=BTC%2FUSD%2CETH%2FUSD&timeframe=1Hour&start=2026-10-02T00%3A00%3A00.123456789Z&end=2026-10-02T02%3A00%3A00Z&limit=25&sort=asc"
+
+  it "builds a location-specific and descending paginated data request" $ do
+    let timeframe = either error id (parseTimeframe "1Min")
+        options = CryptoBarsCommand ["SOL/USD"] Eu1 timeframe
+          Nothing Nothing 10000 BarsDesc 3 Nothing BarsJson Nothing
+        bars = cryptoBarsRequest credentials options (Just "ABC+/==")
+    path bars `shouldBe` "/v1beta3/crypto/eu-1/bars"
+    queryString bars `shouldBe`
+      "?symbols=SOL%2FUSD&timeframe=1Min&limit=10000&sort=desc&page_token=ABC%2B%2F%3D%3D"
 
   it "returns the complete positions JSON body on HTTP 200" $
     interpretPaperResponse 200 "[]"

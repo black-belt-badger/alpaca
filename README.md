@@ -2,12 +2,12 @@
   <img src="docs/fancy.webp" alt="Kirke — Celtic-knot logo and wordmark" width="760">
 </p>
 
-# Kirke — Haskell CLI for Alpaca's paper Trading API
+# Kirke — Haskell CLI for Alpaca's Trading and Crypto Market Data APIs
 
 [![Haskell CI](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/black-belt-badger/kirke/actions/workflows/haskell-ci.yml)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
 
-**Kirke** is an open-source, unofficial Haskell command-line application for accessing [Alpaca's Trading API](https://docs.alpaca.markets/). It offers **read-only account information, open positions, asset discovery, and order history** from Alpaca paper trading. It is not affiliated with, sponsored by, or endorsed by Alpaca Markets.
+**Kirke** is an open-source, unofficial Haskell command-line application for accessing [Alpaca's APIs](https://docs.alpaca.markets/). It offers **read-only account information, open positions, asset discovery, and order history** from Alpaca paper trading, plus **historical crypto bar data** from the market-data API. It is not affiliated with, sponsored by, or endorsed by Alpaca Markets.
 
 The GitHub repository, Haskell package, and command-line executable are named **Kirke** (`kirke`). Its provider-specific Haskell modules intentionally remain under `Alpaca.*`.
 
@@ -33,10 +33,13 @@ The project is early in development. Its first goal is a small, useful, testable
 | `kirke orders --out PATH` | Save complete, unmodified order JSON privately |
 | `kirke order get ORDER_ID` | Fetch an individual paper order using its server UUID |
 | `kirke order get ORDER_ID --nested --out PATH` | Include nested order legs when supported; save complete private JSON |
+| `kirke crypto bars --symbols BTC/USD --timeframe 1Hour` | Retrieve one bounded page of historical crypto OHLCV bars |
+| `kirke crypto bars --symbols BTC/USD,ETH/USD --timeframe 5Min --max-pages 2 --out PATH` | Follow up to two pages and save the JSON page envelopes privately |
+| `kirke crypto bars --symbols BTC/USD --timeframe 1Min --format jsonl --out PATH` | Save one JSONL record per bar |
 
 The summary includes account number, status, currency, cash, equity, buying power, trading-blocked flag, and crypto status (when available).
 
-**Not implemented:** live-account access, order submission/cancellation, market data, streaming, and shell completion. Listing positions does **not** close them or place orders. No trading decisions are made or orders placed.
+**Not implemented:** live-account access, order submission/cancellation, historical trades/quotes, streaming, and shell completion. Listing positions does **not** close them or place orders. No trading decisions are made or orders placed.
 
 ## Requirements
 
@@ -220,9 +223,34 @@ The UUID above is an **illustrative placeholder**, not a real order. Use an ID f
 
 This command is read-only and calls only the **paper trading** API. It never submits, modifies or cancels an order. API reference: [GET /v2/orders/{order_id}](https://docs.alpaca.markets/us/reference/getorderbyorderid-1).
 
+## Historical crypto bars (Alpaca market-data API)
+
+Historical bars use a separate read-only endpoint at **`https://data.alpaca.markets/v1beta3/crypto/{loc}/bars`**, authenticated using the same API-key environment variables. This is **not** the paper-trading endpoint. Kirke never places orders.
+
+```sh
+stack exec -- kirke crypto bars \
+  --symbols BTC/USD,ETH/USD,SOL/USD --timeframe 1Hour \
+  --start 2026-10-02T00:00:00Z --end 2026-10-03T00:00:00Z
+
+stack exec -- kirke crypto bars \
+  --symbols BTC/USD,ETH/USD --timeframe 5Min \
+  --start 2026-10-02 --end 2026-10-03 \
+  --limit 100 --max-pages 3 --sort asc --out output/crypto-bars.json
+
+stack exec -- kirke crypto bars \
+  --symbols SOL/USD --timeframe 1Min --limit 100 --max-pages 2 \
+  --format jsonl --out output/sol-bars.jsonl
+```
+
+**Required:** `--symbols` is a comma-separated list of 1–30 crypto pairs such as `BTC/USD`; `--timeframe` accepts Alpaca's documented timeframes (1–59 minutes, 1–23 hours, 1 day, 1 week, or 1/2/3/4/6/12 months and their documented short aliases). Optional filters are `--location us|us-1|us-2|eu-1|bs-1` (default `us`), `--start` and `--end` (inclusive YYYY-MM-DD or RFC3339 timestamps with timezone), `--limit 1..10000` (default 1000, *across all symbols*, not per symbol), `--sort asc|desc` (default `asc`), `--page-token` to resume, and `--max-pages 1..20` (default **1**). The API may return fewer bars than the page limit even if more pages exist: always consider its next-page token. [Alpaca historical bars API reference](https://docs.alpaca.markets/us/reference/cryptobars-1).
+
+**Output:** With no `--out`, the default `--format json` prints a concise summary and a remaining-pages indicator. With `--out PATH`, JSON output is a stable `{"pages":[API_PAGE_1,API_PAGE_2,...], "next_page_token":...}` document containing the complete original API response objects (including unrecognized fields), rather than disguising multiple pages as one provider response. A non-null final token means more pages remain; pass it via `--page-token` to resume. With `--format jsonl`, output is one JSON object per bar with `symbol`, `t`, `o`, `h`, `l`, `c`, `v`, `n`, `vw`. JSONL can be printed to stdout or written using `--out`. It does **not** retain the continuation token; use JSON export if you need resumption.
+
+The typed decoder uses exact **Scientific decimal** values (no binary floating-point rounding); raw timestamps preserve the API's original nanosecond strings. JSON page objects retain additional upstream fields, although whitespace and numeric spelling may be normalized when serialized. File exports use atomic replacement and owner-only permissions, normally `0600`, and the parent directory must already exist. Bad dates, symbols, timeframes and page limits fail before networking. A repeated page token is rejected instead of looping indefinitely. This is only a small data-access client; Metis/Ariadne handle coverage planning and bulk backfill.
+
 ## Integration test (maintainers)
 
-`scripts/it.sh` performs live requests against the **paper** API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials`, installs the local CLI using Stack, writes account, positions, assets, order-listing and order-detail files under the ignored `output/` directory, checks JSON structures using `jq`, and verifies private file permissions using GNU `stat`.
+`scripts/it.sh` performs live requests against the **paper** API. It loads a trusted credentials file from `${XDG_CONFIG_HOME:-$HOME/.config}/kirke/credentials`, installs the local CLI using Stack, writes account, positions, assets, orders and a small crypto-bars sample under the ignored `output/` directory, checks JSON structures using `jq`, and verifies private file permissions using GNU `stat`.
 
 On a trusted Linux machine with paper credentials, `jq`, and Stack's executable directory on `PATH`:
 
