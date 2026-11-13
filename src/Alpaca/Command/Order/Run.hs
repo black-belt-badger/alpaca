@@ -5,6 +5,7 @@ module Alpaca.Command.Order.Run
   , runOrderGet
   , orderErrorMessage
   , decodeOrderLookup
+  , presentOrderGet
   ) where
 
 import Alpaca.Client (AlpacaError (..), alpacaErrorMessage, fetchOrder)
@@ -18,6 +19,7 @@ import Alpaca.Domain.Order (Order (..), decodeOrder)
 import Alpaca.Output (savePrivateJson)
 import Control.Exception (IOException, displayException, try)
 import Data.ByteString (ByteString)
+import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as TextIO
 import System.Exit (die)
@@ -31,14 +33,23 @@ runOrderGet :: OrderGetCommand -> IO ()
 runOrderGet options = do
   credentials <- loadCredentials >>= either (die . credentialErrorMessage) pure
   response <- fetchOrder credentials options
-  (order, raw) <- either die pure (decodeOrderLookup (getOrderId options) response)
-  case getOrderOutput options of
-    Nothing -> TextIO.putStr (renderOrderSummary order)
-    Just path -> do
-      result <- try (savePrivateJson path raw) :: IO (Either IOException ())
-      case result of
-        Left err -> die ("Could not save order JSON: " <> displayException err)
-        Right () -> putStrLn ("Saved complete order JSON to " <> path)
+  result <- presentOrderGet (getOrderId options) (getOrderOutput options) response
+  either die TextIO.putStr result
+
+-- | Test the complete lookup-to-output boundary without network or secrets.
+-- Never save or display data until the requested order ID has been verified.
+presentOrderGet :: OrderId -> Maybe FilePath -> Either AlpacaError ByteString -> IO (Either String Text)
+presentOrderGet requested destination response =
+  case decodeOrderLookup requested response of
+    Left err -> pure (Left err)
+    Right (order, raw) ->
+      case destination of
+        Nothing -> pure (Right (renderOrderSummary order))
+        Just path -> do
+          result <- try (savePrivateJson path raw) :: IO (Either IOException ())
+          pure $ case result of
+            Left err -> Left ("Could not save order JSON: " <> displayException err)
+            Right () -> Right ("Saved complete order JSON to " <> Text.pack path <> "\n")
 
 -- | Pure, offline-testable order-by-ID response boundary. The raw provider
 -- bytes are passed on unchanged for private --out files, including unknown
