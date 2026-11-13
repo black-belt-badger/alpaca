@@ -3,7 +3,7 @@
 module Alpaca.Command.Account.RunSpec (spec) where
 
 import Alpaca.Command.Account.Run (renderAccountSummary, saveAccountJson)
-import Alpaca.Domain.Account (Account (..), AccountStatus (..))
+import Alpaca.Domain.Account (Account (..), AccountStatus (..), decodeAccount)
 import Control.Exception (finally)
 import Data.Bits ((.&.))
 import qualified Data.ByteString as ByteString
@@ -26,7 +26,7 @@ spec = do
   it "renders blocked trading and missing crypto status" $ do
     let summary =
           renderAccountSummary
-            (exampleAccount {accountTradingBlocked = True, accountCryptoStatus = Nothing})
+            (exampleAccount {accountTradingBlocked = Just True, accountCryptoStatus = Nothing})
     summary `shouldSatisfy` Text.isInfixOf "Trading blocked: yes\n"
     summary `shouldSatisfy` Text.isInfixOf "Crypto status: not provided\n"
 
@@ -37,6 +37,20 @@ spec = do
           })
     summary `shouldSatisfy` Text.isInfixOf "Status: ACCOUNT_UPDATED\n"
     summary `shouldSatisfy` Text.isInfixOf "Crypto status: NEW_CRYPTO_STATUS\n"
+
+  it "renders sparse schema-valid accounts without inventing financial values" $ do
+    let account = either error id (decodeAccount
+          "{\"id\":\"private-id\",\"status\":\"ONBOARDING\",\"account_number\":null}")
+        summary = renderAccountSummary account
+    summary `shouldSatisfy` Text.isInfixOf "Status: ONBOARDING\n"
+    summary `shouldSatisfy` Text.isInfixOf "Account number: not provided\n"
+    summary `shouldSatisfy` Text.isInfixOf "Currency: not provided\n"
+    summary `shouldSatisfy` Text.isInfixOf "Cash: not provided\n"
+    summary `shouldSatisfy` Text.isInfixOf "Equity: not provided\n"
+    summary `shouldSatisfy` Text.isInfixOf "Buying power: not provided\n"
+    summary `shouldSatisfy` Text.isInfixOf "Trading blocked: not provided\n"
+    summary `shouldSatisfy` Text.isInfixOf "Crypto status: not provided\n"
+    summary `shouldSatisfy` (not . Text.isInfixOf "private-id")
 
   it "does not include the internal account UUID" $
     renderAccountSummary exampleAccount
@@ -59,14 +73,7 @@ spec = do
 
 exampleAccount :: Account
 exampleAccount =
-  Account
-    { accountId = "private-id"
-    , accountNumber = "PAPER-001"
-    , accountStatus = StatusActive
-    , accountCurrency = "USD"
-    , accountCash = "1234.567890123456"
-    , accountEquity = "4000.00"
-    , accountBuyingPower = "2500.00"
-    , accountTradingBlocked = False
-    , accountCryptoStatus = Just StatusActive
-    }
+  case decodeAccount
+    "{\"id\":\"private-id\",\"account_number\":\"PAPER-001\",\"status\":\"ACTIVE\",\"currency\":\"USD\",\"cash\":\"1234.567890123456\",\"equity\":\"4000.00\",\"buying_power\":\"2500.00\",\"trading_blocked\":false,\"crypto_status\":\"ACTIVE\"}" of
+      Left err -> error err
+      Right account -> account

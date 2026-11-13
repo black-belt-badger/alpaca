@@ -13,6 +13,7 @@ import Alpaca.Domain.Account (Account (..), decodeAccount, statusValue)
 import Alpaca.Output (savePrivateJson)
 import Control.Exception (IOException, displayException, try)
 import Data.ByteString (ByteString)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as TextIO
@@ -38,13 +39,13 @@ renderAccountSummary :: Account -> Text
 renderAccountSummary account =
   Text.unlines
     [ "Kirke — Alpaca paper account"
-    , "Account number: " <> accountNumber account
+    , "Account number: " <> fromMaybe "not provided" (accountNumber account)
     , "Status: " <> statusValue (accountStatus account)
-    , "Currency: " <> accountCurrency account
-    , "Cash: " <> accountCash account
-    , "Equity: " <> accountEquity account
-    , "Buying power: " <> accountBuyingPower account
-    , "Trading blocked: " <> if accountTradingBlocked account then "yes" else "no"
+    , "Currency: " <> fromMaybe "not provided" (accountCurrency account)
+    , "Cash: " <> fromMaybe "not provided" (accountCash account)
+    , "Equity: " <> fromMaybe "not provided" (accountEquity account)
+    , "Buying power: " <> fromMaybe "not provided" (accountBuyingPower account)
+    , "Trading blocked: " <> maybe "not provided" (\blocked -> if blocked then "yes" else "no") (accountTradingBlocked account)
     , "Crypto status: " <> maybe "not provided" statusValue (accountCryptoStatus account)
     ]
 
